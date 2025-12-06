@@ -27,7 +27,6 @@
             overflow: hidden;
         }
 
-        /* Header with Navigation */
         header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -54,7 +53,6 @@
             margin-top: 5px;
         }
 
-        /* Navigation Menu */
         nav {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -91,7 +89,6 @@
             font-size: 1.2rem;
         }
 
-        /* Main Content */
         .content {
             padding: 40px;
         }
@@ -198,6 +195,38 @@
             color: #721c24;
         }
 
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            color: #155724;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
         .properties-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -228,10 +257,22 @@
             margin: 5px 0;
         }
 
+        .ownership-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            background: white;
         }
 
         th, td {
@@ -282,7 +323,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Quick Links Section */
         .quick-links {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -322,6 +362,17 @@
             margin: 0;
         }
 
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
         @media (max-width: 768px) {
             .container {
                 border-radius: 0;
@@ -347,7 +398,7 @@
             <div class="header-content">
                 <div>
                     <h1>🏠 Property Owner Dashboard</h1>
-                    <div class="subtitle">Airtable Property Management System</div>
+                    <div class="subtitle">Your Property Portfolio</div>
                 </div>
                 <div id="userInfo" style="display: none;">
                     <span id="userName"></span>
@@ -356,7 +407,6 @@
             </div>
         </header>
 
-        <!-- Navigation Menu -->
         <nav id="mainNav" style="display: none;">
             <a href="#" class="nav-link active" onclick="showDashboard()">
                 <span class="icon">📊</span> Dashboard
@@ -394,7 +444,7 @@
                         <div class="form-group">
                             <label for="apiToken">Airtable Personal Access Token</label>
                             <input type="password" id="apiToken" placeholder="pat..." required>
-                            <small style="color: #666;">Your token will be stored in browser localStorage (not sent anywhere except Airtable)</small>
+                            <small style="color: #666;">Your token will be stored in browser localStorage</small>
                         </div>
 
                         <div class="form-group">
@@ -405,29 +455,18 @@
 
                         <button type="submit">Save Configuration</button>
                     </form>
-
-                    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
-                        <strong>🔒 Security Note:</strong> For production use, implement a backend authentication service. 
-                        Storing API tokens in the browser is only suitable for testing/demo purposes.
-                    </div>
                 </div>
 
-                <!-- Quick Links for Setup -->
                 <div class="quick-links">
                     <a href="https://airtable.com/appeusp2Y6vN32ms2/tblXWa5TwsS9MILa8" target="_blank" class="quick-link-card">
                         <span class="icon">🏢</span>
                         <h3>Units Management</h3>
-                        <p>Manage all property units, specifications, and availability</p>
-                    </a>
-                    <a href="https://airtable.com/appeusp2Y6vN32ms2" target="_blank" class="quick-link-card">
-                        <span class="icon">📋</span>
-                        <h3>Full Database</h3>
-                        <p>Access complete Airtable base with all tables</p>
+                        <p>Manage all property units</p>
                     </a>
                     <a href="https://airtable.com/create/tokens" target="_blank" class="quick-link-card">
                         <span class="icon">🔑</span>
                         <h3>Create API Token</h3>
-                        <p>Generate your personal access token for API access</p>
+                        <p>Generate access token</p>
                     </a>
                 </div>
             </div>
@@ -436,7 +475,7 @@
             <div id="loginSection" class="login-section">
                 <div class="card">
                     <h2>🔐 Owner Portal</h2>
-                    <p style="color: #666; margin-bottom: 20px;">Sign in to access your dashboard</p>
+                    <p style="color: #666; margin-bottom: 20px;">Sign in with your owner email</p>
 
                     <div id="loginError" class="alert alert-danger" style="display: none;"></div>
 
@@ -444,16 +483,26 @@
                         <div class="form-group">
                             <label for="email">Email Address</label>
                             <input type="email" id="email" placeholder="owner@example.com" required>
+                            <small style="color: #666;">Use the email registered in your Owners profile</small>
                         </div>
 
                         <div class="form-group">
                             <label for="password">Password</label>
-                            <input type="password" id="password" placeholder="Enter your password" required>
+                            <input type="password" id="password" placeholder="Enter password" required>
                         </div>
 
                         <button type="submit">Sign In</button>
                         <button type="button" onclick="resetConfig()" class="btn-secondary" style="margin-left: 10px;">Reset Configuration</button>
                     </form>
+
+                    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Test Owners:</strong>
+                        <ul style="margin-top: 10px; margin-left: 20px;">
+                            <li>maria.rodriguez@example.com</li>
+                            <li>john.thompson@example.com</li>
+                            <li>sarah.chen@example.com</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
 
@@ -461,44 +510,63 @@
             <div id="dashboardSection" class="dashboard-section">
                 <h2 style="margin-bottom: 20px;">Welcome back, <span id="dashboardUserName"></span></h2>
 
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="number" id="totalUnits">0</div>
+                        <div class="label">Your Units</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number" id="totalOffers">0</div>
+                        <div class="label">Active Offers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number" id="occupiedUnits">0</div>
+                        <div class="label">Occupied</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number" id="vacantUnits">0</div>
+                        <div class="label">Vacant</div>
+                    </div>
+                </div>
+
                 <!-- Quick Actions -->
                 <div class="quick-links">
                     <a href="https://airtable.com/appeusp2Y6vN32ms2/tblXWa5TwsS9MILa8" target="_blank" class="quick-link-card">
                         <span class="icon">🏢</span>
                         <h3>Units Management</h3>
-                        <p>View and manage all property units</p>
-                    </a>
-                    <a href="https://airtable.com/appeusp2Y6vN32ms2/tblVRVADIiaYWVVDz" target="_blank" class="quick-link-card">
-                        <span class="icon">🏗️</span>
-                        <h3>Buildings</h3>
-                        <p>Manage portfolio buildings</p>
+                        <p>View and manage your units</p>
                     </a>
                     <a href="https://airtable.com/appeusp2Y6vN32ms2/tbluU6FAGGCKOyjaI" target="_blank" class="quick-link-card">
                         <span class="icon">💼</span>
                         <h3>Offers</h3>
-                        <p>Review and manage offers</p>
+                        <p>Review offers for your properties</p>
+                    </a>
+                    <a href="https://airtable.com/appeusp2Y6vN32ms2/tblGiDf8lveCYVfKv" target="_blank" class="quick-link-card">
+                        <span class="icon">👥</span>
+                        <h3>Tenants</h3>
+                        <p>View your tenants</p>
                     </a>
                 </div>
 
                 <div class="card">
-                    <h3>📊 Your Properties</h3>
-                    <div id="propertiesList" class="properties-grid"></div>
+                    <h3>🏢 Your Units</h3>
+                    <div id="unitsList" class="properties-grid"></div>
                 </div>
 
                 <div class="card">
-                    <h3>💰 Bids for Your Properties</h3>
-                    <div id="bidsList"></div>
+                    <h3>💰 Offers for Your Units</h3>
+                    <div id="offersList"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Configuration
         const CONFIG_KEY = 'airtable_config';
         const USER_KEY = 'current_user';
+        let currentOwner = null;
 
-        // Initialize
         window.onload = function() {
             const config = getConfig();
             if (config && config.apiToken) {
@@ -524,7 +592,6 @@
             document.getElementById('setupStatus').textContent = 'Configuration saved! Testing connection...';
             document.getElementById('setupStatus').style.display = 'block';
 
-            // Test connection
             setTimeout(() => {
                 testConnection(config);
             }, 500);
@@ -532,7 +599,7 @@
 
         async function testConnection(config) {
             try {
-                const response = await fetch(`https://api.airtable.com/v0/${config.baseId}/Buildings?maxRecords=1`, {
+                const response = await fetch(`https://api.airtable.com/v0/${config.baseId}/Units?maxRecords=1`, {
                     headers: {
                         'Authorization': `Bearer ${config.apiToken}`
                     }
@@ -573,30 +640,68 @@
             document.getElementById('mainNav').style.display = 'flex';
         }
 
-        function login(event) {
+        async function login(event) {
             event.preventDefault();
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.toLowerCase();
             const password = document.getElementById('password').value;
 
-            // Simple authentication (in production, this should be server-side)
-            if (email && password.length >= 6) {
-                const user = { email, name: email.split('@')[0] };
-                localStorage.setItem(USER_KEY, JSON.stringify(user));
+            if (password.length < 6) {
+                document.getElementById('loginError').textContent = 'Password must be at least 6 characters.';
+                document.getElementById('loginError').style.display = 'block';
+                return;
+            }
+
+            const config = getConfig();
+            if (!config) {
+                document.getElementById('loginError').textContent = 'Configuration not found. Please setup first.';
+                document.getElementById('loginError').style.display = 'block';
+                return;
+            }
+
+            try {
+                // Find owner by email
+                const ownersResponse = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Owners?filterByFormula={Email}='${email}'`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`
+                        }
+                    }
+                );
+
+                const ownersData = await ownersResponse.json();
+
+                if (!ownersData.records || ownersData.records.length === 0) {
+                    document.getElementById('loginError').textContent = 'Owner not found. Please check your email.';
+                    document.getElementById('loginError').style.display = 'block';
+                    return;
+                }
+
+                const owner = ownersData.records[0];
+                currentOwner = {
+                    id: owner.id,
+                    email: email,
+                    name: owner.fields['Owner Name'] || email.split('@')[0]
+                };
+
+                localStorage.setItem(USER_KEY, JSON.stringify(currentOwner));
                 
-                document.getElementById('userName').textContent = user.name;
-                document.getElementById('dashboardUserName').textContent = user.name;
+                document.getElementById('userName').textContent = currentOwner.name;
+                document.getElementById('dashboardUserName').textContent = currentOwner.name;
                 document.getElementById('userInfo').style.display = 'block';
                 
                 showDashboard();
                 loadDashboardData();
-            } else {
-                document.getElementById('loginError').textContent = 'Invalid email or password. Please try again.';
+
+            } catch (error) {
+                document.getElementById('loginError').textContent = 'Error: ' + error.message;
                 document.getElementById('loginError').style.display = 'block';
             }
         }
 
         function logout() {
             localStorage.removeItem(USER_KEY);
+            currentOwner = null;
             document.getElementById('userInfo').style.display = 'none';
             showLogin();
         }
@@ -605,88 +710,181 @@
             if (confirm('Are you sure you want to reset the configuration?')) {
                 localStorage.removeItem(CONFIG_KEY);
                 localStorage.removeItem(USER_KEY);
+                currentOwner = null;
                 showSetup();
             }
         }
 
         async function loadDashboardData() {
             const config = getConfig();
-            if (!config) return;
+            const user = JSON.parse(localStorage.getItem(USER_KEY));
+            
+            if (!config || !user) return;
 
-            document.getElementById('propertiesList').innerHTML = '<div class="loading"><div class="spinner"></div>Loading properties...</div>';
-            document.getElementById('bidsList').innerHTML = '<div class="loading"><div class="spinner"></div>Loading bids...</div>';
+            currentOwner = user;
+
+            document.getElementById('unitsList').innerHTML = '<div class="loading"><div class="spinner"></div>Loading your units...</div>';
+            document.getElementById('offersList').innerHTML = '<div class="loading"><div class="spinner"></div>Loading offers...</div>';
 
             try {
-                // Load properties/buildings
-                const buildingsResponse = await fetch(`https://api.airtable.com/v0/${config.baseId}/Buildings`, {
-                    headers: {
-                        'Authorization': `Bearer ${config.apiToken}`
+                // Get Units Owners records for this owner
+                const unitsOwnersResponse = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Units%20Owners?filterByFormula={Owner}='${currentOwner.id}'`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`
+                        }
                     }
-                });
-                const buildingsData = await buildingsResponse.json();
-                displayProperties(buildingsData.records);
+                );
+                const unitsOwnersData = await unitsOwnersResponse.json();
 
-                // Load bids/offers
-                const bidsResponse = await fetch(`https://api.airtable.com/v0/${config.baseId}/Offers`, {
-                    headers: {
-                        'Authorization': `Bearer ${config.apiToken}`
+                if (!unitsOwnersData.records || unitsOwnersData.records.length === 0) {
+                    displayNoUnits();
+                    displayNoOffers();
+                    return;
+                }
+
+                // Extract unit IDs
+                const unitIds = unitsOwnersData.records
+                    .map(uo => uo.fields.Unit)
+                    .filter(u => u && u.length > 0)
+                    .flat();
+
+                if (unitIds.length === 0) {
+                    displayNoUnits();
+                    displayNoOffers();
+                    return;
+                }
+
+                // Get full unit details
+                const unitsPromises = unitIds.map(unitId =>
+                    fetch(`https://api.airtable.com/v0/${config.baseId}/Units/${unitId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`
+                        }
+                    }).then(r => r.json())
+                );
+
+                const units = await Promise.all(unitsPromises);
+                
+                // Get ownership percentages
+                const ownershipMap = {};
+                unitsOwnersData.records.forEach(uo => {
+                    if (uo.fields.Unit && uo.fields.Unit[0]) {
+                        ownershipMap[uo.fields.Unit[0]] = uo.fields['Ownership Percentage'] || 100;
                     }
                 });
-                const bidsData = await bidsResponse.json();
-                displayBids(bidsData.records);
+
+                displayUnits(units, ownershipMap);
+
+                // Get offers for these units
+                const offersFormula = `OR(${unitIds.map(id => `FIND('${id}', {Unit})`).join(',')})`;
+                const offersResponse = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Offers?filterByFormula=${encodeURIComponent(offersFormula)}`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`
+                        }
+                    }
+                );
+                const offersData = await offersResponse.json();
+
+                displayOffers(offersData.records || []);
 
             } catch (error) {
-                document.getElementById('propertiesList').innerHTML = '<div class="alert alert-danger">Error loading data: ' + error.message + '</div>';
-                document.getElementById('bidsList').innerHTML = '';
+                console.error('Error loading data:', error);
+                document.getElementById('unitsList').innerHTML = '<div class="alert alert-danger">Error loading units: ' + error.message + '</div>';
+                document.getElementById('offersList').innerHTML = '<div class="alert alert-danger">Error loading offers: ' + error.message + '</div>';
             }
         }
 
-        function displayProperties(properties) {
-            if (!properties || properties.length === 0) {
-                document.getElementById('propertiesList').innerHTML = '<p>No properties found.</p>';
+        function displayNoUnits() {
+            document.getElementById('unitsList').innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">🏢</div>
+                    <h3>No Units Found</h3>
+                    <p>You don't have any units assigned yet.</p>
+                </div>
+            `;
+            updateStats(0, 0, 0, 0);
+        }
+
+        function displayNoOffers() {
+            document.getElementById('offersList').innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">💼</div>
+                    <h3>No Offers</h3>
+                    <p>There are no offers for your units at this time.</p>
+                </div>
+            `;
+        }
+
+        function displayUnits(units, ownershipMap) {
+            if (!units || units.length === 0) {
+                displayNoUnits();
                 return;
             }
 
-            const html = properties.map(prop => {
-                const fields = prop.fields;
+            let occupied = 0;
+            let vacant = 0;
+
+            const html = units.map(unit => {
+                const fields = unit.fields;
+                const status = fields.Status || 'Unknown';
+                
+                if (status === 'Occupied') occupied++;
+                if (status === 'Vacant') vacant++;
+
+                const ownership = ownershipMap[unit.id] || 100;
+
                 return `
                     <div class="property-card">
-                        <h4>${fields['Property Name'] || 'Unnamed Property'}</h4>
-                        <div class="property-info">📍 ${fields['Address'] || 'No address'}</div>
-                        <div class="property-info">🏢 ${fields['Type'] || 'No type'}</div>
-                        <div class="property-info">💰 ${fields['Base Rent'] ? '$' + fields['Base Rent'] : 'No rent set'}</div>
+                        <h4>${fields['Unit ID'] || 'Unnamed Unit'}</h4>
+                        <div class="property-info">🏢 ${fields.Name || 'No name'}</div>
+                        <div class="property-info">📐 ${fields['Unit Type'] || 'No type'}</div>
+                        <div class="property-info">💰 Base: $${fields['Base Rent'] || 0} | Asking: $${fields['Asking Rent'] || 0}</div>
+                        <div class="property-info">📊 Status: <strong>${status}</strong></div>
+                        <div class="property-info">📏 ${fields['Square Feet'] || 0} sqft</div>
+                        <div class="ownership-badge">${ownership}% Ownership</div>
                     </div>
                 `;
             }).join('');
 
-            document.getElementById('propertiesList').innerHTML = html;
+            document.getElementById('unitsList').innerHTML = html;
+            updateStats(units.length, 0, occupied, vacant);
         }
 
-        function displayBids(bids) {
-            if (!bids || bids.length === 0) {
-                document.getElementById('bidsList').innerHTML = '<p>No bids found.</p>';
+        function displayOffers(offers) {
+            if (!offers || offers.length === 0) {
+                displayNoOffers();
                 return;
             }
+
+            updateStats(null, offers.length, null, null);
 
             const tableHtml = `
                 <table>
                     <thead>
                         <tr>
-                            <th>Bid ID</th>
+                            <th>Offer ID</th>
+                            <th>Unit</th>
+                            <th>Tenant</th>
                             <th>Amount</th>
                             <th>Status</th>
                             <th>Date</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${bids.map(bid => {
-                            const fields = bid.fields;
+                        ${offers.map(offer => {
+                            const fields = offer.fields;
                             const status = fields['Bid Status'] || 'Pending';
-                            const statusClass = `status-${status.toLowerCase()}`;
+                            const statusClass = `status-${status.toLowerCase().replace(' ', '-')}`;
                             return `
                                 <tr>
                                     <td>${fields['Bid ID'] || 'N/A'}</td>
-                                    <td>${fields['Bid Amount'] ? '$' + fields['Bid Amount'] : 'N/A'}</td>
+                                    <td>${fields['Unit (from Availability Period)'] || 'N/A'}</td>
+                                    <td>${fields['Email (from Tenant (Linked))'] || 'N/A'}</td>
+                                    <td>$${fields['Bid Amount'] || 0}</td>
                                     <td class="${statusClass}">${status}</td>
                                     <td>${fields['Submission Date'] ? new Date(fields['Submission Date']).toLocaleDateString() : 'N/A'}</td>
                                 </tr>
@@ -696,7 +894,14 @@
                 </table>
             `;
 
-            document.getElementById('bidsList').innerHTML = tableHtml;
+            document.getElementById('offersList').innerHTML = tableHtml;
+        }
+
+        function updateStats(totalUnits, totalOffers, occupied, vacant) {
+            if (totalUnits !== null) document.getElementById('totalUnits').textContent = totalUnits;
+            if (totalOffers !== null) document.getElementById('totalOffers').textContent = totalOffers;
+            if (occupied !== null) document.getElementById('occupiedUnits').textContent = occupied;
+            if (vacant !== null) document.getElementById('vacantUnits').textContent = vacant;
         }
     </script>
 </body>
