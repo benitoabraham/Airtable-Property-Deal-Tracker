@@ -498,32 +498,39 @@
             document.getElementById('offersList').innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
 
             try {
-                console.log('Loading data for owner:', currentOwner.id);
+                console.log('🔍 Loading data for owner:', currentOwner.id, currentOwner.name);
                 
-                // FIX: Use SEARCH formula for linked record filtering
-                const formula = `SEARCH("${currentOwner.id}", ARRAYJOIN({Owner}))`;
-                console.log('Filter formula:', formula);
-                
+                // NUEVA ESTRATEGIA: Obtener TODOS los registros de Units Owners y filtrar en JavaScript
                 const unitsOwnersResponse = await fetch(
-                    `https://api.airtable.com/v0/${config.baseId}/Units%20Owners?filterByFormula=${encodeURIComponent(formula)}`,
+                    `https://api.airtable.com/v0/${config.baseId}/Units%20Owners`,
                     { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
                 );
                 
                 const unitsOwnersData = await unitsOwnersResponse.json();
-                console.log('Units Owners response:', unitsOwnersData);
+                console.log('📋 Total Units Owners records:', unitsOwnersData.records.length);
 
-                if (!unitsOwnersData.records || unitsOwnersData.records.length === 0) {
+                // Filtrar en JavaScript para encontrar los que pertenecen a este owner
+                const myUnitsOwners = unitsOwnersData.records.filter(record => {
+                    const ownerField = record.fields.Owner;
+                    if (!ownerField || !Array.isArray(ownerField)) return false;
+                    return ownerField.includes(currentOwner.id);
+                });
+
+                console.log('✅ My Units Owners records:', myUnitsOwners.length);
+                console.log('📊 My Units Owners:', myUnitsOwners);
+
+                if (myUnitsOwners.length === 0) {
                     displayNoUnits();
                     displayNoOffers();
                     return;
                 }
 
-                const unitIds = unitsOwnersData.records
+                const unitIds = myUnitsOwners
                     .map(uo => uo.fields.Unit)
                     .filter(u => u && u.length > 0)
                     .flat();
 
-                console.log('Unit IDs:', unitIds);
+                console.log('🏢 Unit IDs:', unitIds);
 
                 if (unitIds.length === 0) {
                     displayNoUnits();
@@ -531,6 +538,7 @@
                     return;
                 }
 
+                // Obtener detalles de las units
                 const unitsPromises = unitIds.map(unitId =>
                     fetch(`https://api.airtable.com/v0/${config.baseId}/Units/${unitId}`, {
                         headers: { 'Authorization': `Bearer ${config.apiToken}` }
@@ -538,10 +546,10 @@
                 );
 
                 const units = await Promise.all(unitsPromises);
-                console.log('Units loaded:', units.length);
+                console.log('✅ Units loaded:', units.length);
                 
                 const ownershipMap = {};
-                unitsOwnersData.records.forEach(uo => {
+                myUnitsOwners.forEach(uo => {
                     if (uo.fields.Unit && uo.fields.Unit[0]) {
                         ownershipMap[uo.fields.Unit[0]] = uo.fields['Ownership Percentage'] || 1;
                     }
@@ -549,16 +557,21 @@
 
                 displayUnits(units, ownershipMap);
 
-                const offersFormula = `OR(${unitIds.map(id => `FIND('${id}', {Unit})`).join(',')})`;
+                // Obtener ofertas
+                const offersFormula = `OR(${unitIds.map(id => `FIND('${id}', ARRAYJOIN({Unit}))`).join(',')})`;
+                console.log('🔍 Offers formula:', offersFormula);
+                
                 const offersResponse = await fetch(
                     `https://api.airtable.com/v0/${config.baseId}/Offers?filterByFormula=${encodeURIComponent(offersFormula)}`,
                     { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
                 );
                 const offersData = await offersResponse.json();
+                console.log('💼 Offers found:', offersData.records ? offersData.records.length : 0);
+                
                 displayOffers(offersData.records || []);
 
             } catch (error) {
-                console.error('Error loading data:', error);
+                console.error('❌ Error loading data:', error);
                 document.getElementById('unitsList').innerHTML = '<div class="alert alert-danger">Error: ' + error.message + '</div>';
                 document.getElementById('offersList').innerHTML = '';
             }
