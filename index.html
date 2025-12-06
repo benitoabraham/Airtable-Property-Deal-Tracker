@@ -67,6 +67,7 @@
             border: 1px solid #e9ecef;
         }
         .card h2 { color: #333; margin-bottom: 15px; }
+        .card h3 { color: #555; margin-bottom: 15px; font-size: 1.2rem; }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; color: #555; font-weight: 500; }
         input {
@@ -130,7 +131,7 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
         .property-card h4 { color: #667eea; margin-bottom: 10px; }
-        .property-info { color: #666; margin: 5px 0; }
+        .property-info { color: #666; margin: 5px 0; font-size: 0.95rem; }
         .ownership-badge {
             display: inline-block;
             background: #28a745;
@@ -149,6 +150,7 @@
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #e9ecef;
+            font-size: 0.9rem;
         }
         th {
             background: #f8f9fa;
@@ -228,7 +230,7 @@
         </header>
 
         <nav id="mainNav" style="display: none;">
-            <a href="#" class="nav-link active" onclick="showDashboard()">
+            <a href="#" class="nav-link active" onclick="showDashboard(); return false;">
                 <span class="icon">📊</span> Dashboard
             </a>
             <a href="https://airtable.com/appeusp2Y6vN32ms2/tblXWa5TwsS9MILa8" target="_blank" class="nav-link">
@@ -240,7 +242,6 @@
         </nav>
 
         <div class="content">
-            <!-- Setup Section -->
             <div id="setupSection" class="setup-section active">
                 <div class="card">
                     <h2>⚙️ Setup Required</h2>
@@ -264,7 +265,6 @@
                 </div>
             </div>
 
-            <!-- Login Section -->
             <div id="loginSection" class="login-section">
                 <div class="card">
                     <h2>🔐 Owner Portal</h2>
@@ -274,7 +274,6 @@
                         <div class="form-group">
                             <label for="email">Email Address</label>
                             <input type="email" id="email" placeholder="owner@example.com" required>
-                            <small style="color: #666;">Use the email registered in your Owners profile</small>
                         </div>
                         <div class="form-group">
                             <label for="password">Password</label>
@@ -285,17 +284,15 @@
                     </form>
                     <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
                         <strong>Test Owners:</strong>
-                        <ul style="margin-top: 10px; margin-left: 20px;">
+                        <ul style="margin-top: 10px; margin-left: 20px; font-size: 0.9rem;">
                             <li>maria.r@sunsetrentals.com</li>
                             <li>john.t@mountainproperties.com</li>
                             <li>sarah.chen@citylofts.com</li>
-                            <li>partners@tc-investments.com</li>
                         </ul>
                     </div>
                 </div>
             </div>
 
-            <!-- Dashboard Section -->
             <div id="dashboardSection" class="dashboard-section">
                 <h2 style="margin-bottom: 20px;">Welcome back, <span id="dashboardUserName"></span></h2>
                 <div class="stats-grid">
@@ -500,7 +497,7 @@
             try {
                 console.log('🔍 Loading data for owner:', currentOwner.id, currentOwner.name);
                 
-                // NUEVA ESTRATEGIA: Obtener TODOS los registros de Units Owners y filtrar en JavaScript
+                // Obtener TODOS los Units Owners y filtrar en JavaScript
                 const unitsOwnersResponse = await fetch(
                     `https://api.airtable.com/v0/${config.baseId}/Units%20Owners`,
                     { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
@@ -509,7 +506,7 @@
                 const unitsOwnersData = await unitsOwnersResponse.json();
                 console.log('📋 Total Units Owners records:', unitsOwnersData.records.length);
 
-                // Filtrar en JavaScript para encontrar los que pertenecen a este owner
+                // Filtrar los que pertenecen a este owner
                 const myUnitsOwners = unitsOwnersData.records.filter(record => {
                     const ownerField = record.fields.Owner;
                     if (!ownerField || !Array.isArray(ownerField)) return false;
@@ -517,7 +514,6 @@
                 });
 
                 console.log('✅ My Units Owners records:', myUnitsOwners.length);
-                console.log('📊 My Units Owners:', myUnitsOwners);
 
                 if (myUnitsOwners.length === 0) {
                     displayNoUnits();
@@ -538,7 +534,7 @@
                     return;
                 }
 
-                // Obtener detalles de las units
+                // Obtener detalles de units
                 const unitsPromises = unitIds.map(unitId =>
                     fetch(`https://api.airtable.com/v0/${config.baseId}/Units/${unitId}`, {
                         headers: { 'Authorization': `Bearer ${config.apiToken}` }
@@ -557,18 +553,26 @@
 
                 displayUnits(units, ownershipMap);
 
-                // Obtener ofertas
-                const offersFormula = `OR(${unitIds.map(id => `FIND('${id}', ARRAYJOIN({Unit}))`).join(',')})`;
-                console.log('🔍 Offers formula:', offersFormula);
-                
-                const offersResponse = await fetch(
-                    `https://api.airtable.com/v0/${config.baseId}/Offers?filterByFormula=${encodeURIComponent(offersFormula)}`,
+                // Obtener TODAS las ofertas y filtrar en JavaScript
+                const allOffersResponse = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Offers`,
                     { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
                 );
-                const offersData = await offersResponse.json();
-                console.log('💼 Offers found:', offersData.records ? offersData.records.length : 0);
                 
-                displayOffers(offersData.records || []);
+                const allOffersData = await allOffersResponse.json();
+                console.log('📋 Total Offers in system:', allOffersData.records ? allOffersData.records.length : 0);
+                
+                // Filtrar ofertas que pertenecen a las units del owner
+                const myOffers = allOffersData.records ? allOffersData.records.filter(offer => {
+                    const offerUnits = offer.fields['Unit (from Availability Period)'];
+                    if (!offerUnits || !Array.isArray(offerUnits)) return false;
+                    // Verificar si alguna unit de la oferta coincide con las units del owner
+                    return offerUnits.some(unitId => unitIds.includes(unitId));
+                }) : [];
+                
+                console.log('💼 My Offers found:', myOffers.length);
+                
+                displayOffers(myOffers);
 
             } catch (error) {
                 console.error('❌ Error loading data:', error);
@@ -642,6 +646,27 @@
 
             updateStats(null, offers.length, null, null);
 
+            const html = offers.map(offer => {
+                const fields = offer.fields;
+                const status = fields['Bid Status'] || 'Pending';
+                const statusClass = 'status-' + status.toLowerCase().replace(' ', '-');
+                const unitName = fields['Name (from Unit) (from Availability Period)'];
+                const tenantEmail = fields['Email (from Tenant (Linked))'];
+                const bidAmount = fields['Bid Amount'] || 0;
+                const submissionDate = fields['Submission Date'] ? new Date(fields['Submission Date']).toLocaleDateString() : 'N/A';
+                
+                return `
+                    <tr>
+                        <td>${fields['Bid ID'] || 'N/A'}</td>
+                        <td>${unitName && unitName[0] ? unitName[0] : 'N/A'}</td>
+                        <td>${tenantEmail && tenantEmail[0] ? tenantEmail[0] : 'N/A'}</td>
+                        <td>$${bidAmount.toLocaleString()}</td>
+                        <td class="${statusClass}">${status}</td>
+                        <td>${submissionDate}</td>
+                    </tr>
+                `;
+            }).join('');
+
             const tableHtml = `
                 <table>
                     <thead>
@@ -655,21 +680,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        ${offers.map(offer => {
-                            const fields = offer.fields;
-                            const status = fields['Bid Status'] || 'Pending';
-                            const statusClass = `status-${status.toLowerCase().replace(' ', '-')}`;
-                            return `
-                                <tr>
-                                    <td>${fields['Bid ID'] || 'N/A'}</td>
-                                    <td>${fields['Unit (from Availability Period)'] || 'N/A'}</td>
-                                    <td>${fields['Email (from Tenant (Linked))'] || 'N/A'}</td>
-                                    <td>$${fields['Bid Amount'] || 0}</td>
-                                    <td class="${statusClass}">${status}</td>
-                                    <td>${fields['Submission Date'] ? new Date(fields['Submission Date']).toLocaleDateString() : 'N/A'}</td>
-                                </tr>
-                            `;
-                        }).join('')}
+                        ${html}
                     </tbody>
                 </table>
             `;
