@@ -448,9 +448,8 @@
             </div>
             <form id="editUnitForm" onsubmit="saveUnit(event)">
                 <input type="hidden" id="editUnitId">
-                <div class="form-group">
-                    <label for="editUnitName">Unit Name</label>
-                    <input type="text" id="editUnitName" required>
+                <div class="alert alert-info" style="margin-bottom: 20px;">
+                    <strong>ℹ️ Note:</strong> The Unit Name is auto-generated and cannot be edited directly. Update other fields to change the unit details.
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -523,13 +522,12 @@
                 <span class="close" onclick="closeAddUnitModal()">&times;</span>
             </div>
             <form id="addUnitForm" onsubmit="addUnit(event)">
+                <div class="alert alert-info" style="margin-bottom: 20px;">
+                    <strong>ℹ️ Note:</strong> The Unit Name will be auto-generated based on your Unit ID and other details.
+                </div>
                 <div class="form-group">
                     <label for="newUnitId">Unit ID *</label>
                     <input type="text" id="newUnitId" placeholder="e.g., A-101" required>
-                </div>
-                <div class="form-group">
-                    <label for="newUnitName">Unit Name *</label>
-                    <input type="text" id="newUnitName" placeholder="e.g., Ocean View Studio" required>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -993,7 +991,6 @@
 
             const fields = unit.fields;
             document.getElementById('editUnitId').value = unit.id;
-            document.getElementById('editUnitName').value = fields.Name || '';
             document.getElementById('editUnitType').value = fields['Unit Type'] || 'Studio';
             document.getElementById('editStatus').value = fields.Status || 'Vacant';
             document.getElementById('editBaseRent').value = fields['Base Rent'] || '';
@@ -1016,18 +1013,36 @@
             const config = getConfig();
             const unitId = document.getElementById('editUnitId').value;
 
-            const updatedFields = {
-                'Name': document.getElementById('editUnitName').value,
-                'Unit Type': document.getElementById('editUnitType').value,
-                'Status': document.getElementById('editStatus').value,
-                'Base Rent': parseFloat(document.getElementById('editBaseRent').value) || 0,
-                'Asking Rent': parseFloat(document.getElementById('editAskingRent').value) || 0,
-                'Square Feet': parseInt(document.getElementById('editSquareFeet').value) || 0,
-                'Bedrooms': parseFloat(document.getElementById('editBedrooms').value) || 0,
-                'Bathrooms': parseFloat(document.getElementById('editBathrooms').value) || 0,
-                'Floor': parseInt(document.getElementById('editFloor').value) || 0,
-                'Description': document.getElementById('editDescription').value
-            };
+            // Build update object - only include fields that have values and aren't computed
+            const updatedFields = {};
+            
+            // Only update editable fields (not computed fields like "Name")
+            const unitType = document.getElementById('editUnitType').value;
+            if (unitType) updatedFields['Unit Type'] = unitType;
+            
+            const status = document.getElementById('editStatus').value;
+            if (status) updatedFields['Status'] = status;
+            
+            const baseRent = document.getElementById('editBaseRent').value;
+            if (baseRent !== '') updatedFields['Base Rent'] = parseFloat(baseRent) || 0;
+            
+            const askingRent = document.getElementById('editAskingRent').value;
+            if (askingRent !== '') updatedFields['Asking Rent'] = parseFloat(askingRent) || 0;
+            
+            const sqft = document.getElementById('editSquareFeet').value;
+            if (sqft !== '') updatedFields['Square Feet'] = parseInt(sqft) || 0;
+            
+            const bedrooms = document.getElementById('editBedrooms').value;
+            if (bedrooms !== '') updatedFields['Bedrooms'] = parseFloat(bedrooms) || 0;
+            
+            const bathrooms = document.getElementById('editBathrooms').value;
+            if (bathrooms !== '') updatedFields['Bathrooms'] = parseFloat(bathrooms) || 0;
+            
+            const floor = document.getElementById('editFloor').value;
+            if (floor !== '') updatedFields['Floor'] = parseInt(floor) || 0;
+            
+            const description = document.getElementById('editDescription').value;
+            if (description) updatedFields['Description'] = description;
 
             try {
                 const response = await fetch(
@@ -1069,19 +1084,34 @@
             event.preventDefault();
             const config = getConfig();
 
+            // Build fields object - only include editable fields (Name is computed)
             const newFields = {
                 'Unit ID': document.getElementById('newUnitId').value,
-                'Name': document.getElementById('newUnitName').value,
                 'Unit Type': document.getElementById('newUnitType').value,
-                'Status': document.getElementById('newStatus').value,
-                'Base Rent': parseFloat(document.getElementById('newBaseRent').value) || 0,
-                'Asking Rent': parseFloat(document.getElementById('newAskingRent').value) || 0,
-                'Square Feet': parseInt(document.getElementById('newSquareFeet').value) || 0,
-                'Bedrooms': parseFloat(document.getElementById('newBedrooms').value) || 0,
-                'Bathrooms': parseFloat(document.getElementById('newBathrooms').value) || 0,
-                'Floor': parseInt(document.getElementById('newFloor').value) || 0,
-                'Description': document.getElementById('newDescription').value
+                'Status': document.getElementById('newStatus').value
             };
+            
+            // Add optional fields if they have values
+            const baseRent = document.getElementById('newBaseRent').value;
+            if (baseRent !== '') newFields['Base Rent'] = parseFloat(baseRent) || 0;
+            
+            const askingRent = document.getElementById('newAskingRent').value;
+            if (askingRent !== '') newFields['Asking Rent'] = parseFloat(askingRent) || 0;
+            
+            const sqft = document.getElementById('newSquareFeet').value;
+            if (sqft !== '') newFields['Square Feet'] = parseInt(sqft) || 0;
+            
+            const bedrooms = document.getElementById('newBedrooms').value;
+            if (bedrooms !== '') newFields['Bedrooms'] = parseFloat(bedrooms) || 0;
+            
+            const bathrooms = document.getElementById('newBathrooms').value;
+            if (bathrooms !== '') newFields['Bathrooms'] = parseFloat(bathrooms) || 0;
+            
+            const floor = document.getElementById('newFloor').value;
+            if (floor !== '') newFields['Floor'] = parseInt(floor) || 0;
+            
+            const description = document.getElementById('newDescription').value;
+            if (description) newFields['Description'] = description;
 
             try {
                 // First, create the unit
