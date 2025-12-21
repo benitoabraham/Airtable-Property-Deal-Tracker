@@ -67,17 +67,32 @@
             border: 1px solid #e9ecef;
         }
         .card h2 { color: #333; margin-bottom: 15px; }
-        .card h3 { color: #555; margin-bottom: 15px; font-size: 1.2rem; }
+        .card h3 { 
+            color: #555; 
+            margin-bottom: 15px; 
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; color: #555; font-weight: 500; }
-        input {
+        input, select, textarea {
             width: 100%;
             padding: 12px;
             border: 2px solid #e9ecef;
             border-radius: 6px;
             font-size: 1rem;
+            font-family: inherit;
         }
-        input:focus { outline: none; border-color: #667eea; }
+        input:focus, select:focus, textarea:focus { 
+            outline: none; 
+            border-color: #667eea; 
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
         button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -90,7 +105,19 @@
             transition: transform 0.2s;
         }
         button:hover { transform: translateY(-2px); }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
         .btn-secondary { background: #6c757d; }
+        .btn-success { background: #28a745; }
+        .btn-danger { background: #dc3545; }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            margin: 2px;
+        }
         .alert {
             padding: 15px;
             border-radius: 6px;
@@ -99,6 +126,7 @@
         .alert-warning { background: #fff3cd; border: 1px solid #ffc107; color: #856404; }
         .alert-info { background: #d1ecf1; border: 1px solid #17a2b8; color: #0c5460; }
         .alert-danger { background: #f8d7da; border: 1px solid #dc3545; color: #721c24; }
+        .alert-success { background: #d4edda; border: 1px solid #28a745; color: #155724; }
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -132,6 +160,12 @@
         }
         .property-card h4 { color: #667eea; margin-bottom: 10px; }
         .property-info { color: #666; margin: 5px 0; font-size: 0.95rem; }
+        .property-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
         .ownership-badge {
             display: inline-block;
             background: #28a745;
@@ -208,9 +242,66 @@
             color: #999;
         }
         .empty-state .icon { font-size: 4rem; margin-bottom: 20px; }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal.active { display: block; }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+        }
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .close:hover { color: #000; }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
         @media (max-width: 768px) {
             .content { padding: 20px; }
             h1 { font-size: 1.5rem; }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .modal-content {
+                margin: 10% auto;
+                width: 95%;
+            }
         }
     </style>
 </head>
@@ -333,7 +424,10 @@
                 </div>
 
                 <div class="card">
-                    <h3>🏢 Your Units</h3>
+                    <h3>
+                        <span>🏢 Your Units</span>
+                        <button onclick="showAddUnitModal()" class="btn-small btn-success">+ Add Unit</button>
+                    </h3>
                     <div id="unitsList" class="properties-grid"></div>
                 </div>
 
@@ -345,10 +439,201 @@
         </div>
     </div>
 
+    <!-- Edit Unit Modal -->
+    <div id="editUnitModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✏️ Edit Unit</h2>
+                <span class="close" onclick="closeEditUnitModal()">&times;</span>
+            </div>
+            <form id="editUnitForm" onsubmit="saveUnit(event)">
+                <input type="hidden" id="editUnitId">
+                <div class="alert alert-info" style="margin-bottom: 20px;">
+                    <strong>ℹ️ Note:</strong> The Unit Name is auto-generated and cannot be edited directly. Update other fields to change the unit details.
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editUnitType">Unit Type</label>
+                        <select id="editUnitType">
+                            <option>Studio</option>
+                            <option>1BR</option>
+                            <option>2BR</option>
+                            <option>3BR</option>
+                            <option>4BR+</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editStatus">Status</label>
+                        <select id="editStatus">
+                            <option>Vacant</option>
+                            <option>Occupied</option>
+                            <option>Under Renovation</option>
+                            <option>Off Market</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editBaseRent">Base Rent ($)</label>
+                        <input type="number" id="editBaseRent" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="editAskingRent">Asking Rent ($)</label>
+                        <input type="number" id="editAskingRent" step="0.01" min="0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editSquareFeet">Square Feet</label>
+                        <input type="number" id="editSquareFeet" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="editBedrooms">Bedrooms</label>
+                        <input type="number" id="editBedrooms" min="0" step="0.5">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editBathrooms">Bathrooms</label>
+                        <input type="number" id="editBathrooms" min="0" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label for="editFloor">Floor</label>
+                        <input type="number" id="editFloor" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editDescription">Description</label>
+                    <textarea id="editDescription" rows="3"></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit">💾 Save Changes</button>
+                    <button type="button" onclick="closeEditUnitModal()" class="btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Unit Modal -->
+    <div id="addUnitModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>➕ Add New Unit</h2>
+                <span class="close" onclick="closeAddUnitModal()">&times;</span>
+            </div>
+            <form id="addUnitForm" onsubmit="addUnit(event)">
+                <div class="alert alert-info" style="margin-bottom: 20px;">
+                    <strong>ℹ️ Note:</strong> The Unit Name will be auto-generated based on your Unit ID and other details.
+                </div>
+                <div class="form-group">
+                    <label for="newUnitId">Unit ID *</label>
+                    <input type="text" id="newUnitId" placeholder="e.g., A-101" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newUnitType">Unit Type *</label>
+                        <select id="newUnitType" required>
+                            <option value="">Select type...</option>
+                            <option>Studio</option>
+                            <option>1BR</option>
+                            <option>2BR</option>
+                            <option>3BR</option>
+                            <option>4BR+</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="newStatus">Status *</label>
+                        <select id="newStatus" required>
+                            <option value="">Select status...</option>
+                            <option>Vacant</option>
+                            <option>Occupied</option>
+                            <option>Under Renovation</option>
+                            <option>Off Market</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newBaseRent">Base Rent ($) *</label>
+                        <input type="number" id="newBaseRent" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newAskingRent">Asking Rent ($) *</label>
+                        <input type="number" id="newAskingRent" step="0.01" min="0" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newSquareFeet">Square Feet</label>
+                        <input type="number" id="newSquareFeet" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="newBedrooms">Bedrooms</label>
+                        <input type="number" id="newBedrooms" min="0" step="0.5">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newBathrooms">Bathrooms</label>
+                        <input type="number" id="newBathrooms" min="0" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label for="newFloor">Floor</label>
+                        <input type="number" id="newFloor" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="newDescription">Description</label>
+                    <textarea id="newDescription" rows="3"></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit">➕ Add Unit</button>
+                    <button type="button" onclick="closeAddUnitModal()" class="btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Update Offer Modal -->
+    <div id="updateOfferModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📝 Update Offer Status</h2>
+                <span class="close" onclick="closeUpdateOfferModal()">&times;</span>
+            </div>
+            <form id="updateOfferForm" onsubmit="updateOffer(event)">
+                <input type="hidden" id="updateOfferId">
+                <div id="offerDetails" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                    <!-- Offer details will be populated here -->
+                </div>
+                <div class="form-group">
+                    <label for="updateOfferStatus">Bid Status *</label>
+                    <select id="updateOfferStatus" required>
+                        <option value="Pending">Pending</option>
+                        <option value="Accepted">Accepted</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="Countered">Countered</option>
+                        <option value="Withdrawn">Withdrawn</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="updateOfferNotes">Notes</label>
+                    <textarea id="updateOfferNotes" rows="4" placeholder="Add any notes about this decision..."></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit">💾 Update Offer</button>
+                    <button type="button" onclick="closeUpdateOfferModal()" class="btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const CONFIG_KEY = 'airtable_config';
         const USER_KEY = 'current_user';
         let currentOwner = null;
+        let allUnits = [];
+        let allOffers = [];
 
         window.onload = function() {
             const config = getConfig();
@@ -497,7 +782,6 @@
             try {
                 console.log('🔍 Loading data for owner:', currentOwner.id, currentOwner.name);
                 
-                // Obtener TODOS los Units Owners y filtrar en JavaScript
                 const unitsOwnersResponse = await fetch(
                     `https://api.airtable.com/v0/${config.baseId}/Units%20Owners`,
                     { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
@@ -506,7 +790,6 @@
                 const unitsOwnersData = await unitsOwnersResponse.json();
                 console.log('📋 Total Units Owners records:', unitsOwnersData.records.length);
 
-                // Filtrar los que pertenecen a este owner
                 const myUnitsOwners = unitsOwnersData.records.filter(record => {
                     const ownerField = record.fields.Owner;
                     if (!ownerField || !Array.isArray(ownerField)) return false;
@@ -534,7 +817,6 @@
                     return;
                 }
 
-                // Obtener detalles de units
                 const unitsPromises = unitIds.map(unitId =>
                     fetch(`https://api.airtable.com/v0/${config.baseId}/Units/${unitId}`, {
                         headers: { 'Authorization': `Bearer ${config.apiToken}` }
@@ -542,6 +824,7 @@
                 );
 
                 const units = await Promise.all(unitsPromises);
+                allUnits = units;
                 console.log('✅ Units loaded:', units.length);
                 
                 const ownershipMap = {};
@@ -553,7 +836,6 @@
 
                 displayUnits(units, ownershipMap);
 
-                // Obtener TODAS las ofertas y filtrar en JavaScript
                 const allOffersResponse = await fetch(
                     `https://api.airtable.com/v0/${config.baseId}/Offers`,
                     { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
@@ -562,14 +844,13 @@
                 const allOffersData = await allOffersResponse.json();
                 console.log('📋 Total Offers in system:', allOffersData.records ? allOffersData.records.length : 0);
                 
-                // Filtrar ofertas que pertenecen a las units del owner
                 const myOffers = allOffersData.records ? allOffersData.records.filter(offer => {
                     const offerUnits = offer.fields['Unit (from Availability Period)'];
                     if (!offerUnits || !Array.isArray(offerUnits)) return false;
-                    // Verificar si alguna unit de la oferta coincide con las units del owner
                     return offerUnits.some(unitId => unitIds.includes(unitId));
                 }) : [];
                 
+                allOffers = myOffers;
                 console.log('💼 My Offers found:', myOffers.length);
                 
                 displayOffers(myOffers);
@@ -630,6 +911,10 @@
                         <div class="property-info">📊 Status: <strong>${status}</strong></div>
                         <div class="property-info">📏 ${fields['Square Feet'] || 0} sqft</div>
                         <div class="ownership-badge">${ownershipPercent}% Ownership</div>
+                        <div class="property-actions">
+                            <button class="btn-small" onclick="editUnit('${unit.id}')">✏️ Edit</button>
+                            <button class="btn-small btn-secondary" onclick="viewUnitInAirtable('${unit.id}')">👁️ View Full Details</button>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -663,6 +948,9 @@
                         <td>$${bidAmount.toLocaleString()}</td>
                         <td class="${statusClass}">${status}</td>
                         <td>${submissionDate}</td>
+                        <td>
+                            <button class="btn-small" onclick="updateOfferStatus('${offer.id}')">✏️ Update</button>
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -677,6 +965,7 @@
                             <th>Amount</th>
                             <th>Status</th>
                             <th>Date</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -693,6 +982,270 @@
             if (totalOffers !== null) document.getElementById('totalOffers').textContent = totalOffers;
             if (occupied !== null) document.getElementById('occupiedUnits').textContent = occupied;
             if (vacant !== null) document.getElementById('vacantUnits').textContent = vacant;
+        }
+
+        // Edit Unit Functions
+        function editUnit(unitId) {
+            const unit = allUnits.find(u => u.id === unitId);
+            if (!unit) return;
+
+            const fields = unit.fields;
+            document.getElementById('editUnitId').value = unit.id;
+            document.getElementById('editUnitType').value = fields['Unit Type'] || 'Studio';
+            document.getElementById('editStatus').value = fields.Status || 'Vacant';
+            document.getElementById('editBaseRent').value = fields['Base Rent'] || '';
+            document.getElementById('editAskingRent').value = fields['Asking Rent'] || '';
+            document.getElementById('editSquareFeet').value = fields['Square Feet'] || '';
+            document.getElementById('editBedrooms').value = fields.Bedrooms || '';
+            document.getElementById('editBathrooms').value = fields.Bathrooms || '';
+            document.getElementById('editFloor').value = fields.Floor || '';
+            document.getElementById('editDescription').value = fields.Description || '';
+
+            document.getElementById('editUnitModal').classList.add('active');
+        }
+
+        function closeEditUnitModal() {
+            document.getElementById('editUnitModal').classList.remove('active');
+        }
+
+        async function saveUnit(event) {
+            event.preventDefault();
+            const config = getConfig();
+            const unitId = document.getElementById('editUnitId').value;
+
+            // Build update object - only include fields that have values and aren't computed
+            const updatedFields = {};
+            
+            // Only update editable fields (not computed fields like "Name")
+            const unitType = document.getElementById('editUnitType').value;
+            if (unitType) updatedFields['Unit Type'] = unitType;
+            
+            const status = document.getElementById('editStatus').value;
+            if (status) updatedFields['Status'] = status;
+            
+            const baseRent = document.getElementById('editBaseRent').value;
+            if (baseRent !== '') updatedFields['Base Rent'] = parseFloat(baseRent) || 0;
+            
+            const askingRent = document.getElementById('editAskingRent').value;
+            if (askingRent !== '') updatedFields['Asking Rent'] = parseFloat(askingRent) || 0;
+            
+            const sqft = document.getElementById('editSquareFeet').value;
+            if (sqft !== '') updatedFields['Square Feet'] = parseInt(sqft) || 0;
+            
+            const bedrooms = document.getElementById('editBedrooms').value;
+            if (bedrooms !== '') updatedFields['Bedrooms'] = parseFloat(bedrooms) || 0;
+            
+            const bathrooms = document.getElementById('editBathrooms').value;
+            if (bathrooms !== '') updatedFields['Bathrooms'] = parseFloat(bathrooms) || 0;
+            
+            const floor = document.getElementById('editFloor').value;
+            if (floor !== '') updatedFields['Floor'] = parseInt(floor) || 0;
+            
+            const description = document.getElementById('editDescription').value;
+            if (description) updatedFields['Description'] = description;
+
+            try {
+                const response = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Units/${unitId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fields: updatedFields })
+                    }
+                );
+
+                if (response.ok) {
+                    closeEditUnitModal();
+                    alert('✅ Unit updated successfully!');
+                    loadDashboardData();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Error updating unit: ' + (error.error?.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        // Add Unit Functions
+        function showAddUnitModal() {
+            document.getElementById('addUnitForm').reset();
+            document.getElementById('addUnitModal').classList.add('active');
+        }
+
+        function closeAddUnitModal() {
+            document.getElementById('addUnitModal').classList.remove('active');
+        }
+
+        async function addUnit(event) {
+            event.preventDefault();
+            const config = getConfig();
+
+            // Build fields object - only include editable fields (Name is computed)
+            const newFields = {
+                'Unit ID': document.getElementById('newUnitId').value,
+                'Unit Type': document.getElementById('newUnitType').value,
+                'Status': document.getElementById('newStatus').value
+            };
+            
+            // Add optional fields if they have values
+            const baseRent = document.getElementById('newBaseRent').value;
+            if (baseRent !== '') newFields['Base Rent'] = parseFloat(baseRent) || 0;
+            
+            const askingRent = document.getElementById('newAskingRent').value;
+            if (askingRent !== '') newFields['Asking Rent'] = parseFloat(askingRent) || 0;
+            
+            const sqft = document.getElementById('newSquareFeet').value;
+            if (sqft !== '') newFields['Square Feet'] = parseInt(sqft) || 0;
+            
+            const bedrooms = document.getElementById('newBedrooms').value;
+            if (bedrooms !== '') newFields['Bedrooms'] = parseFloat(bedrooms) || 0;
+            
+            const bathrooms = document.getElementById('newBathrooms').value;
+            if (bathrooms !== '') newFields['Bathrooms'] = parseFloat(bathrooms) || 0;
+            
+            const floor = document.getElementById('newFloor').value;
+            if (floor !== '') newFields['Floor'] = parseInt(floor) || 0;
+            
+            const description = document.getElementById('newDescription').value;
+            if (description) newFields['Description'] = description;
+
+            try {
+                // First, create the unit
+                const unitResponse = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Units`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fields: newFields })
+                    }
+                );
+
+                if (!unitResponse.ok) {
+                    const error = await unitResponse.json();
+                    throw new Error(error.error?.message || 'Failed to create unit');
+                }
+
+                const newUnit = await unitResponse.json();
+
+                // Now create a Units Owners record to link this unit to the current owner
+                const unitsOwnersResponse = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Units%20Owners`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            fields: {
+                                'Unit': [newUnit.id],
+                                'Owner': [currentOwner.id],
+                                'Ownership Percentage': 1.0
+                            }
+                        })
+                    }
+                );
+
+                if (!unitsOwnersResponse.ok) {
+                    console.warn('Unit created but failed to link to owner');
+                }
+
+                closeAddUnitModal();
+                alert('✅ Unit added successfully!');
+                loadDashboardData();
+
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        // Update Offer Functions
+        function updateOfferStatus(offerId) {
+            const offer = allOffers.find(o => o.id === offerId);
+            if (!offer) return;
+
+            const fields = offer.fields;
+            document.getElementById('updateOfferId').value = offer.id;
+            document.getElementById('updateOfferStatus').value = fields['Bid Status'] || 'Pending';
+            document.getElementById('updateOfferNotes').value = '';
+
+            // Display offer details
+            const unitName = fields['Name (from Unit) (from Availability Period)'];
+            const tenantEmail = fields['Email (from Tenant (Linked))'];
+            const bidAmount = fields['Bid Amount'] || 0;
+            
+            document.getElementById('offerDetails').innerHTML = `
+                <div><strong>Offer ID:</strong> ${fields['Bid ID'] || 'N/A'}</div>
+                <div><strong>Unit:</strong> ${unitName && unitName[0] ? unitName[0] : 'N/A'}</div>
+                <div><strong>Tenant:</strong> ${tenantEmail && tenantEmail[0] ? tenantEmail[0] : 'N/A'}</div>
+                <div><strong>Bid Amount:</strong> $${bidAmount.toLocaleString()}</div>
+                <div><strong>Current Status:</strong> ${fields['Bid Status'] || 'Pending'}</div>
+            `;
+
+            document.getElementById('updateOfferModal').classList.add('active');
+        }
+
+        function closeUpdateOfferModal() {
+            document.getElementById('updateOfferModal').classList.remove('active');
+        }
+
+        async function updateOffer(event) {
+            event.preventDefault();
+            const config = getConfig();
+            const offerId = document.getElementById('updateOfferId').value;
+
+            const updatedFields = {
+                'Bid Status': document.getElementById('updateOfferStatus').value
+            };
+
+            const notes = document.getElementById('updateOfferNotes').value;
+            if (notes) {
+                updatedFields['Notes'] = notes;
+            }
+
+            try {
+                const response = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Offers/${offerId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fields: updatedFields })
+                    }
+                );
+
+                if (response.ok) {
+                    closeUpdateOfferModal();
+                    alert('✅ Offer updated successfully!');
+                    loadDashboardData();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Error updating offer: ' + (error.error?.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        function viewUnitInAirtable(unitId) {
+            const config = getConfig();
+            window.open(`https://airtable.com/${config.baseId}/tblXWa5TwsS9MILa8/${unitId}`, '_blank');
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('active');
+            }
         }
     </script>
 </body>
