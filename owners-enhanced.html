@@ -57,8 +57,8 @@
             transform: translateY(-2px);
         }
         .content { padding: 40px; }
-        .setup-section, .login-section, .dashboard-section, .units-management-section, .offers-management-section { display: none; }
-        .setup-section.active, .login-section.active, .dashboard-section.active, .units-management-section.active, .offers-management-section.active { display: block; }
+        .setup-section, .login-section, .dashboard-section, .units-management-section, .offers-management-section, .tenants-management-section { display: none; }
+        .setup-section.active, .login-section.active, .dashboard-section.active, .units-management-section.active, .offers-management-section.active, .tenants-management-section.active { display: block; }
         .card {
             background: #f8f9fa;
             border-radius: 8px;
@@ -330,6 +330,9 @@
             <a href="#" class="nav-link" id="navOffersManagement" onclick="showOffersManagement(); return false;">
                 <span class="icon">💼</span> Offers Management
             </a>
+            <a href="#" class="nav-link" id="navTenantsManagement" onclick="showTenantsManagement(); return false;">
+                <span class="icon">👥</span> Tenants Management
+            </a>
             <a href="https://airtable.com/appeusp2Y6vN32ms2" target="_blank" class="nav-link">
                 <span class="icon">📋</span> Full Database
             </a>
@@ -419,10 +422,10 @@
                         <h3>Offers Management</h3>
                         <p>Review and manage offers</p>
                     </a>
-                    <a href="https://airtable.com/appeusp2Y6vN32ms2/tblGiDf8lveCYVfKv" target="_blank" class="quick-link-card">
+                    <a href="#" onclick="showTenantsManagement(); return false;" class="quick-link-card">
                         <span class="icon">👥</span>
-                        <h3>Tenants</h3>
-                        <p>View your tenants</p>
+                        <h3>Tenants Management</h3>
+                        <p>View and manage tenants</p>
                     </a>
                 </div>
 
@@ -462,6 +465,17 @@
 
                 <div class="card">
                     <div id="offersManagementList"></div>
+                </div>
+            </div>
+
+            <div id="tenantsManagementSection" class="tenants-management-section">
+                <div style="margin-bottom: 20px;">
+                    <h2>👥 Tenants Management</h2>
+                    <p style="color: #666; margin-top: 5px;">Showing tenants for units owned by: <strong id="tenantsOwnerName"></strong></p>
+                </div>
+
+                <div class="card">
+                    <div id="tenantsManagementList"></div>
                 </div>
             </div>
         </div>
@@ -662,6 +676,7 @@
         let currentOwner = null;
         let allUnits = [];
         let allOffers = [];
+        let allTenants = [];
 
         window.onload = function() {
             const config = getConfig();
@@ -725,12 +740,14 @@
             document.getElementById('dashboardSection').classList.add('active');
             document.getElementById('unitsManagementSection').classList.remove('active');
             document.getElementById('offersManagementSection').classList.remove('active');
+            document.getElementById('tenantsManagementSection').classList.remove('active');
             document.getElementById('mainNav').style.display = 'flex';
 
             // Update nav active states
             document.getElementById('navDashboard').classList.add('active');
             document.getElementById('navUnitsManagement').classList.remove('active');
             document.getElementById('navOffersManagement').classList.remove('active');
+            document.getElementById('navTenantsManagement').classList.remove('active');
         }
 
         function showUnitsManagement() {
@@ -739,12 +756,14 @@
             document.getElementById('dashboardSection').classList.remove('active');
             document.getElementById('unitsManagementSection').classList.add('active');
             document.getElementById('offersManagementSection').classList.remove('active');
+            document.getElementById('tenantsManagementSection').classList.remove('active');
             document.getElementById('mainNav').style.display = 'flex';
 
             // Update nav active states
             document.getElementById('navDashboard').classList.remove('active');
             document.getElementById('navUnitsManagement').classList.add('active');
             document.getElementById('navOffersManagement').classList.remove('active');
+            document.getElementById('navTenantsManagement').classList.remove('active');
 
             // Update owner name display
             if (currentOwner) {
@@ -761,12 +780,14 @@
             document.getElementById('dashboardSection').classList.remove('active');
             document.getElementById('unitsManagementSection').classList.remove('active');
             document.getElementById('offersManagementSection').classList.add('active');
+            document.getElementById('tenantsManagementSection').classList.remove('active');
             document.getElementById('mainNav').style.display = 'flex';
 
             // Update nav active states
             document.getElementById('navDashboard').classList.remove('active');
             document.getElementById('navUnitsManagement').classList.remove('active');
             document.getElementById('navOffersManagement').classList.add('active');
+            document.getElementById('navTenantsManagement').classList.remove('active');
 
             // Update owner name display
             if (currentOwner) {
@@ -775,6 +796,30 @@
 
             // Load offers management view
             displayOffersManagement();
+        }
+
+        function showTenantsManagement() {
+            document.getElementById('setupSection').classList.remove('active');
+            document.getElementById('loginSection').classList.remove('active');
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('unitsManagementSection').classList.remove('active');
+            document.getElementById('offersManagementSection').classList.remove('active');
+            document.getElementById('tenantsManagementSection').classList.add('active');
+            document.getElementById('mainNav').style.display = 'flex';
+
+            // Update nav active states
+            document.getElementById('navDashboard').classList.remove('active');
+            document.getElementById('navUnitsManagement').classList.remove('active');
+            document.getElementById('navOffersManagement').classList.remove('active');
+            document.getElementById('navTenantsManagement').classList.add('active');
+
+            // Update owner name display
+            if (currentOwner) {
+                document.getElementById('tenantsOwnerName').textContent = currentOwner.name || currentOwner.email;
+            }
+
+            // Load tenants management view
+            displayTenantsManagement();
         }
 
         async function login(event) {
@@ -931,8 +976,34 @@
                 
                 allOffers = myOffers;
                 console.log('💼 My Offers found:', myOffers.length);
-                
+
                 displayOffers(myOffers);
+
+                // Load tenants from offers
+                const tenantIds = [...new Set(myOffers
+                    .map(offer => offer.fields['Tenant (Linked)'])
+                    .filter(t => t && t.length > 0)
+                    .flat())];
+
+                console.log('👥 Tenant IDs from offers:', tenantIds);
+
+                if (tenantIds.length > 0) {
+                    const tenantsPromises = tenantIds.map(tenantId =>
+                        fetch(`https://api.airtable.com/v0/${config.baseId}/Tenants/${tenantId}`, {
+                            headers: { 'Authorization': `Bearer ${config.apiToken}` }
+                        }).then(r => r.json()).catch(err => {
+                            console.warn(`Failed to fetch tenant ${tenantId}:`, err);
+                            return null;
+                        })
+                    );
+
+                    const tenants = await Promise.all(tenantsPromises);
+                    allTenants = tenants.filter(t => t !== null);
+                    console.log('✅ Tenants loaded:', allTenants.length);
+                } else {
+                    allTenants = [];
+                    console.log('✅ No tenants found');
+                }
 
             } catch (error) {
                 console.error('❌ Error loading data:', error);
@@ -1211,6 +1282,89 @@
             `;
 
             document.getElementById('offersManagementList').innerHTML = tableHtml;
+        }
+
+        function displayTenantsManagement() {
+            console.log('🔍 displayTenantsManagement called');
+            console.log('📊 Current owner:', currentOwner);
+            console.log('👥 All tenants count:', allTenants ? allTenants.length : 0);
+            console.log('👥 Tenants data:', allTenants);
+
+            if (!allTenants || allTenants.length === 0) {
+                document.getElementById('tenantsManagementList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">👥</div>
+                        <h3>No Tenants Found</h3>
+                        <p>There are no tenants associated with your units at this time.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableHtml = `
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Current Unit</th>
+                                <th>Move-in Date</th>
+                                <th>Lease End Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${allTenants.map(tenant => {
+                                const fields = tenant.fields;
+                                const name = fields.Name || 'N/A';
+                                const email = fields.Email || 'N/A';
+                                const phone = fields.Phone || 'N/A';
+                                const currentUnit = fields['Current Unit'] && fields['Current Unit'][0] ? fields['Current Unit'][0] : 'N/A';
+                                const moveInDate = fields['Move-in Date'] ? new Date(fields['Move-in Date']).toLocaleDateString() : 'N/A';
+                                const leaseEndDate = fields['Lease End Date'] ? new Date(fields['Lease End Date']).toLocaleDateString() : 'N/A';
+                                const status = fields.Status || 'Active';
+                                const statusClass = status === 'Active' ? 'status-accepted' :
+                                                   status === 'Inactive' ? 'status-rejected' :
+                                                   status === 'Prospective' ? 'status-pending' : '';
+
+                                return `
+                                    <tr>
+                                        <td><strong>${name}</strong></td>
+                                        <td>${email}</td>
+                                        <td>${phone}</td>
+                                        <td>${currentUnit}</td>
+                                        <td>${moveInDate}</td>
+                                        <td>${leaseEndDate}</td>
+                                        <td class="${statusClass}"><strong>${status}</strong></td>
+                                        <td>
+                                            <button class="btn-small btn-secondary" onclick="viewTenantDetails('${tenant.id}')">👁️ View</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; font-size: 0.9rem;">
+                    <strong>📊 Summary:</strong> ${allTenants.length} tenant(s) total
+                    ${allTenants.filter(t => t.fields.Status === 'Active').length > 0 ?
+                        ` | <span class="status-accepted">${allTenants.filter(t => t.fields.Status === 'Active').length} Active</span>` : ''}
+                    ${allTenants.filter(t => t.fields.Status === 'Prospective').length > 0 ?
+                        ` | <span class="status-pending">${allTenants.filter(t => t.fields.Status === 'Prospective').length} Prospective</span>` : ''}
+                    ${allTenants.filter(t => t.fields.Status === 'Inactive').length > 0 ?
+                        ` | <span class="status-rejected">${allTenants.filter(t => t.fields.Status === 'Inactive').length} Inactive</span>` : ''}
+                </div>
+            `;
+
+            document.getElementById('tenantsManagementList').innerHTML = tableHtml;
+        }
+
+        function viewTenantDetails(tenantId) {
+            const config = getConfig();
+            window.open(`https://airtable.com/${config.baseId}/tblGiDf8lveCYVfKv/${tenantId}`, '_blank');
         }
 
         // Edit Unit Functions
