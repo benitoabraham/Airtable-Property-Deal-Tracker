@@ -904,23 +904,18 @@
             document.getElementById('offersList').innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
 
             try {
-                console.log('🔍 Loading data for owner:', currentOwner.id, currentOwner.name);
-                
                 const unitsOwnersResponse = await fetch(
                     `https://api.airtable.com/v0/${config.baseId}/Units%20Owners`,
                     { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
                 );
-                
+
                 const unitsOwnersData = await unitsOwnersResponse.json();
-                console.log('📋 Total Units Owners records:', unitsOwnersData.records.length);
 
                 const myUnitsOwners = unitsOwnersData.records.filter(record => {
                     const ownerField = record.fields.Owner;
                     if (!ownerField || !Array.isArray(ownerField)) return false;
                     return ownerField.includes(currentOwner.id);
                 });
-
-                console.log('✅ My Units Owners records:', myUnitsOwners.length);
 
                 if (myUnitsOwners.length === 0) {
                     displayNoUnits();
@@ -932,8 +927,6 @@
                     .map(uo => uo.fields.Unit)
                     .filter(u => u && u.length > 0)
                     .flat();
-
-                console.log('🏢 Unit IDs:', unitIds);
 
                 if (unitIds.length === 0) {
                     displayNoUnits();
@@ -949,8 +942,7 @@
 
                 const units = await Promise.all(unitsPromises);
                 allUnits = units;
-                console.log('✅ Units loaded:', units.length);
-                
+
                 const ownershipMap = {};
                 myUnitsOwners.forEach(uo => {
                     if (uo.fields.Unit && uo.fields.Unit[0]) {
@@ -966,16 +958,14 @@
                 );
                 
                 const allOffersData = await allOffersResponse.json();
-                console.log('📋 Total Offers in system:', allOffersData.records ? allOffersData.records.length : 0);
-                
+
                 const myOffers = allOffersData.records ? allOffersData.records.filter(offer => {
                     const offerUnits = offer.fields['Unit (from Availability Period)'];
                     if (!offerUnits || !Array.isArray(offerUnits)) return false;
                     return offerUnits.some(unitId => unitIds.includes(unitId));
                 }) : [];
-                
+
                 allOffers = myOffers;
-                console.log('💼 My Offers found:', myOffers.length);
 
                 displayOffers(myOffers);
 
@@ -985,24 +975,19 @@
                     .filter(t => t && t.length > 0)
                     .flat())];
 
-                console.log('👥 Tenant IDs from offers:', tenantIds);
-
                 if (tenantIds.length > 0) {
                     const tenantsPromises = tenantIds.map(tenantId =>
                         fetch(`https://api.airtable.com/v0/${config.baseId}/Tenants/${tenantId}`, {
                             headers: { 'Authorization': `Bearer ${config.apiToken}` }
                         }).then(r => r.json()).catch(err => {
-                            console.warn(`Failed to fetch tenant ${tenantId}:`, err);
                             return null;
                         })
                     );
 
                     const tenants = await Promise.all(tenantsPromises);
                     allTenants = tenants.filter(t => t !== null);
-                    console.log('✅ Tenants loaded:', allTenants.length);
                 } else {
                     allTenants = [];
-                    console.log('✅ No tenants found');
                 }
 
             } catch (error) {
@@ -1135,11 +1120,6 @@
         }
 
         function displayUnitsManagement() {
-            console.log('🔍 displayUnitsManagement called');
-            console.log('📊 Current owner:', currentOwner);
-            console.log('🏢 All units count:', allUnits ? allUnits.length : 0);
-            console.log('🏢 Units data:', allUnits);
-
             if (!allUnits || allUnits.length === 0) {
                 document.getElementById('unitsManagementList').innerHTML = `
                     <div class="empty-state">
@@ -1205,11 +1185,6 @@
         }
 
         function displayOffersManagement() {
-            console.log('🔍 displayOffersManagement called');
-            console.log('📊 Current owner:', currentOwner);
-            console.log('💼 All offers count:', allOffers ? allOffers.length : 0);
-            console.log('💼 Offers data:', allOffers);
-
             if (!allOffers || allOffers.length === 0) {
                 document.getElementById('offersManagementList').innerHTML = `
                     <div class="empty-state">
@@ -1285,11 +1260,6 @@
         }
 
         function displayTenantsManagement() {
-            console.log('🔍 displayTenantsManagement called');
-            console.log('📊 Current owner:', currentOwner);
-            console.log('👥 All tenants count:', allTenants ? allTenants.length : 0);
-            console.log('👥 Tenants data:', allTenants);
-
             if (!allTenants || allTenants.length === 0) {
                 document.getElementById('tenantsManagementList').innerHTML = `
                     <div class="empty-state">
