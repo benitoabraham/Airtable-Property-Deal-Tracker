@@ -439,7 +439,10 @@
 
             <div id="unitsManagementSection" class="units-management-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>🏢 Units Management</h2>
+                    <div>
+                        <h2>🏢 Units Management</h2>
+                        <p style="color: #666; margin-top: 5px;">Showing units for: <strong id="unitsOwnerName"></strong></p>
+                    </div>
                     <button onclick="showAddUnitModal()" class="btn-success">+ Add New Unit</button>
                 </div>
 
@@ -724,6 +727,11 @@
             // Update nav active states
             document.getElementById('navDashboard').classList.remove('active');
             document.getElementById('navUnitsManagement').classList.add('active');
+
+            // Update owner name display
+            if (currentOwner) {
+                document.getElementById('unitsOwnerName').textContent = currentOwner.name || currentOwner.email;
+            }
 
             // Load units management view
             displayUnitsManagement();
@@ -1016,6 +1024,11 @@
         }
 
         function displayUnitsManagement() {
+            console.log('🔍 displayUnitsManagement called');
+            console.log('📊 Current owner:', currentOwner);
+            console.log('🏢 All units count:', allUnits ? allUnits.length : 0);
+            console.log('🏢 Units data:', allUnits);
+
             if (!allUnits || allUnits.length === 0) {
                 document.getElementById('unitsManagementList').innerHTML = `
                     <div class="empty-state">
