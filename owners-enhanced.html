@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Property Owner Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -397,7 +398,8 @@
                 </div>
                 <div id="userInfo" style="display: none;">
                     <span id="userName"></span>
-                    <button onclick="logout()" class="btn-secondary" style="margin-left: 15px;">Logout</button>
+                    <button onclick="showNotificationSettings()" class="btn-secondary" style="margin-left: 15px;">🔔 Notifications</button>
+                    <button onclick="logout()" class="btn-secondary" style="margin-left: 10px;">Logout</button>
                 </div>
             </div>
         </header>
@@ -788,9 +790,74 @@
         </div>
     </div>
 
+    <!-- Notification Settings Modal -->
+    <div id="notificationSettingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔔 Email Notification Settings</h2>
+                <span class="close" onclick="closeNotificationSettings()">&times;</span>
+            </div>
+            <form onsubmit="saveNotificationSettings(event)">
+                <div class="alert" style="background: #e7f3ff; color: #004085; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                    <strong>ℹ️ How it works:</strong> Get email alerts when new offers are submitted for your units. Configure your EmailJS credentials below.
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="enableNotifications" onchange="toggleNotificationFields()">
+                        Enable email notifications for new offers
+                    </label>
+                </div>
+
+                <div id="notificationFields" style="display: none;">
+                    <div class="form-group">
+                        <label for="notificationEmail">Your Email Address</label>
+                        <input type="email" id="notificationEmail" placeholder="owner@example.com" required>
+                        <small>Email address where notifications will be sent</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="emailjsServiceId">EmailJS Service ID</label>
+                        <input type="text" id="emailjsServiceId" placeholder="service_xxxxxxx" required>
+                        <small>Get this from <a href="https://www.emailjs.com/" target="_blank">EmailJS Dashboard</a></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="emailjsTemplateId">EmailJS Template ID</label>
+                        <input type="text" id="emailjsTemplateId" placeholder="template_xxxxxxx" required>
+                        <small>Template ID for offer notifications</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="emailjsPublicKey">EmailJS Public Key</label>
+                        <input type="text" id="emailjsPublicKey" placeholder="xxxxxxxxxxxxxx" required>
+                        <small>Your EmailJS public key</small>
+                    </div>
+
+                    <div class="alert" style="background: #fff3cd; color: #856404; padding: 12px; border-radius: 6px; font-size: 0.9rem; margin-top: 15px;">
+                        <strong>📝 Setup Instructions:</strong>
+                        <ol style="margin: 10px 0 0 20px; line-height: 1.6;">
+                            <li>Create a free account at <a href="https://www.emailjs.com/" target="_blank">EmailJS.com</a></li>
+                            <li>Create an Email Service (Gmail, Outlook, etc.)</li>
+                            <li>Create an Email Template with variables: {{owner_name}}, {{unit_name}}, {{tenant_email}}, {{bid_amount}}</li>
+                            <li>Copy your Service ID, Template ID, and Public Key here</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit">💾 Save Settings</button>
+                    <button type="button" onclick="closeNotificationSettings()" class="btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const CONFIG_KEY = 'airtable_config';
         const USER_KEY = 'current_user';
+        const NOTIFICATION_KEY = 'notification_settings';
+        const LAST_OFFERS_KEY = 'last_offers_check';
         let currentOwner = null;
         let allUnits = [];
         let allOffers = [];
@@ -819,6 +886,12 @@
                 showLogin();
             } else {
                 showSetup();
+            }
+
+            // Initialize EmailJS if configured
+            const notificationSettings = getNotificationSettings();
+            if (notificationSettings.enabled && notificationSettings.publicKey) {
+                emailjs.init(notificationSettings.publicKey);
             }
         };
 
@@ -1161,6 +1234,9 @@
 
                 // Render charts after all data is loaded
                 renderCharts();
+
+                // Check for new offers and send notifications
+                await checkForNewOffers();
 
             } catch (error) {
                 console.error('❌ Error loading data:', error);
@@ -2150,6 +2226,127 @@
         function viewTenantDetails(tenantId) {
             const config = getConfig();
             window.open(`https://airtable.com/${config.baseId}/tblGiDf8lveCYVfKv/${tenantId}`, '_blank');
+        }
+
+        // Notification Settings Functions
+        function showNotificationSettings() {
+            const settings = getNotificationSettings();
+
+            document.getElementById('enableNotifications').checked = settings.enabled || false;
+            document.getElementById('notificationEmail').value = settings.email || '';
+            document.getElementById('emailjsServiceId').value = settings.serviceId || '';
+            document.getElementById('emailjsTemplateId').value = settings.templateId || '';
+            document.getElementById('emailjsPublicKey').value = settings.publicKey || '';
+
+            toggleNotificationFields();
+            document.getElementById('notificationSettingsModal').classList.add('active');
+        }
+
+        function closeNotificationSettings() {
+            document.getElementById('notificationSettingsModal').classList.remove('active');
+        }
+
+        function toggleNotificationFields() {
+            const enabled = document.getElementById('enableNotifications').checked;
+            document.getElementById('notificationFields').style.display = enabled ? 'block' : 'none';
+
+            // Set required attribute based on enabled state
+            const fields = ['notificationEmail', 'emailjsServiceId', 'emailjsTemplateId', 'emailjsPublicKey'];
+            fields.forEach(fieldId => {
+                document.getElementById(fieldId).required = enabled;
+            });
+        }
+
+        function saveNotificationSettings(event) {
+            event.preventDefault();
+
+            const settings = {
+                enabled: document.getElementById('enableNotifications').checked,
+                email: document.getElementById('notificationEmail').value,
+                serviceId: document.getElementById('emailjsServiceId').value,
+                templateId: document.getElementById('emailjsTemplateId').value,
+                publicKey: document.getElementById('emailjsPublicKey').value
+            };
+
+            localStorage.setItem(NOTIFICATION_KEY, JSON.stringify(settings));
+
+            // Initialize EmailJS if enabled
+            if (settings.enabled && settings.publicKey) {
+                emailjs.init(settings.publicKey);
+            }
+
+            closeNotificationSettings();
+            alert('✅ Notification settings saved successfully!');
+        }
+
+        function getNotificationSettings() {
+            const stored = localStorage.getItem(NOTIFICATION_KEY);
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        async function checkForNewOffers() {
+            const settings = getNotificationSettings();
+            if (!settings.enabled || !allOffers || allOffers.length === 0) {
+                return;
+            }
+
+            // Get last check timestamp
+            const lastCheck = localStorage.getItem(LAST_OFFERS_KEY);
+            const lastCheckTime = lastCheck ? new Date(lastCheck) : new Date(0);
+
+            // Find new offers submitted after last check
+            const newOffers = allOffers.filter(offer => {
+                const submissionDate = offer.fields['Submission Date'];
+                if (!submissionDate) return false;
+                return new Date(submissionDate) > lastCheckTime;
+            });
+
+            // Update last check timestamp
+            localStorage.setItem(LAST_OFFERS_KEY, new Date().toISOString());
+
+            // Send notification for each new offer
+            if (newOffers.length > 0) {
+                for (const offer of newOffers) {
+                    await sendOfferNotification(offer);
+                }
+
+                // Show user notification
+                const plural = newOffers.length > 1 ? 's' : '';
+                alert(`📧 ${newOffers.length} new offer${plural} detected! Email notification${plural} sent.`);
+            }
+        }
+
+        async function sendOfferNotification(offer) {
+            const settings = getNotificationSettings();
+            if (!settings.enabled) return;
+
+            const fields = offer.fields;
+            const unitName = fields['Name (from Unit) (from Availability Period)'];
+            const tenantEmail = fields['Email (from Tenant (Linked))'];
+            const bidAmount = fields['Bid Amount'] || 0;
+
+            const templateParams = {
+                owner_name: currentOwner.name || currentOwner.email,
+                to_email: settings.email,
+                unit_name: unitName && unitName[0] ? unitName[0] : 'Unknown Unit',
+                tenant_email: tenantEmail && tenantEmail[0] ? tenantEmail[0] : 'Unknown',
+                bid_amount: '$' + bidAmount.toLocaleString(),
+                offer_id: fields['Bid ID'] || 'N/A',
+                submission_date: fields['Submission Date'] ? new Date(fields['Submission Date']).toLocaleDateString() : 'N/A',
+                move_in_date: fields['Move-in Date'] ? new Date(fields['Move-in Date']).toLocaleDateString() : 'N/A',
+                lease_term: fields['Lease Term (Months)'] || 'N/A'
+            };
+
+            try {
+                await emailjs.send(
+                    settings.serviceId,
+                    settings.templateId,
+                    templateParams
+                );
+                console.log('✅ Email notification sent for offer:', fields['Bid ID']);
+            } catch (error) {
+                console.error('❌ Failed to send email notification:', error);
+            }
         }
 
         // Edit Unit Functions
