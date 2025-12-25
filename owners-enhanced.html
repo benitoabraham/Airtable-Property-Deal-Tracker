@@ -406,19 +406,19 @@
 
         <nav id="mainNav" style="display: none;">
             <a href="#" class="nav-link" id="navDashboard" onclick="showDashboard(); return false;">
-                <span class="icon">📊</span> Dashboard
+                <span class="icon">📊</span> Dashboard Overview
             </a>
             <a href="#" class="nav-link" id="navUnitsManagement" onclick="showUnitsManagement(); return false;">
-                <span class="icon">🏢</span> Units Management
+                <span class="icon">🏢</span> Buildings & Units
             </a>
             <a href="#" class="nav-link" id="navOffersManagement" onclick="showOffersManagement(); return false;">
-                <span class="icon">💼</span> Offers Management
+                <span class="icon">💼</span> Business Offers
             </a>
             <a href="#" class="nav-link" id="navTenantsManagement" onclick="showTenantsManagement(); return false;">
-                <span class="icon">👥</span> Tenants Management
+                <span class="icon">👥</span> People & Tenants
             </a>
             <a href="https://airtable.com/appeusp2Y6vN32ms2" target="_blank" class="nav-link">
-                <span class="icon">📋</span> Full Database
+                <span class="icon">📋</span> Complete Database
             </a>
         </nav>
 
@@ -478,44 +478,48 @@
                 <h2 style="margin-bottom: 20px;">Welcome back, <span id="dashboardUserName"></span></h2>
                 <div class="stats-grid">
                     <div class="stat-card">
+                        <div class="icon" style="font-size: 2rem; margin-bottom: 10px;">🏢</div>
                         <div class="number" id="totalUnits">0</div>
                         <div class="label">Your Units</div>
                     </div>
                     <div class="stat-card">
+                        <div class="icon" style="font-size: 2rem; margin-bottom: 10px;">💼</div>
                         <div class="number" id="totalOffers">0</div>
                         <div class="label">Active Offers</div>
                     </div>
                     <div class="stat-card">
+                        <div class="icon" style="font-size: 2rem; margin-bottom: 10px;">✅</div>
                         <div class="number" id="occupiedUnits">0</div>
-                        <div class="label">Occupied</div>
+                        <div class="label">Occupied Units</div>
                     </div>
                     <div class="stat-card">
+                        <div class="icon" style="font-size: 2rem; margin-bottom: 10px;">📭</div>
                         <div class="number" id="vacantUnits">0</div>
-                        <div class="label">Vacant</div>
+                        <div class="label">Vacant Units</div>
                     </div>
                 </div>
 
                 <div class="charts-grid">
                     <div class="chart-container">
-                        <h3>📊 Units by Status</h3>
+                        <h3>📊 Analytics: Units by Status</h3>
                         <div class="chart-wrapper">
                             <canvas id="unitsStatusChart"></canvas>
                         </div>
                     </div>
                     <div class="chart-container">
-                        <h3>🏢 Units by Type</h3>
+                        <h3>🏢 Property Portfolio: Units by Type</h3>
                         <div class="chart-wrapper">
                             <canvas id="unitsTypeChart"></canvas>
                         </div>
                     </div>
                     <div class="chart-container">
-                        <h3>💼 Offers by Status</h3>
+                        <h3>💼 Business: Offers by Status</h3>
                         <div class="chart-wrapper">
                             <canvas id="offersStatusChart"></canvas>
                         </div>
                     </div>
                     <div class="chart-container">
-                        <h3>💰 Rent Overview</h3>
+                        <h3>💰 Revenue: Rent Overview</h3>
                         <div class="chart-wrapper">
                             <canvas id="rentOverviewChart"></canvas>
                         </div>
@@ -542,14 +546,14 @@
 
                 <div class="card">
                     <h3>
-                        <span>🏢 Your Units</span>
+                        <span>🏢 Buildings: Your Property Units</span>
                         <button onclick="showAddUnitModal()" class="btn-small btn-success">+ Add Unit</button>
                     </h3>
                     <div id="unitsList" class="properties-grid"></div>
                 </div>
 
                 <div class="card">
-                    <h3>💰 Offers for Your Units</h3>
+                    <h3>💰 Opportunities: Offers for Your Units</h3>
                     <div id="offersList"></div>
                 </div>
             </div>
@@ -557,8 +561,8 @@
             <div id="unitsManagementSection" class="units-management-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <div>
-                        <h2>🏢 Units Management</h2>
-                        <p style="color: #666; margin-top: 5px;">Showing units for: <strong id="unitsOwnerName"></strong></p>
+                        <h2>🏢 Buildings & Property Units Management</h2>
+                        <p style="color: #666; margin-top: 5px;">Showing portfolio for: <strong id="unitsOwnerName"></strong></p>
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <button onclick="exportUnitsToCSV()" class="export-btn">📥 Export CSV</button>
@@ -574,8 +578,8 @@
             <div id="offersManagementSection" class="offers-management-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <div>
-                        <h2>💼 Offers Management</h2>
-                        <p style="color: #666; margin-top: 5px;">Showing offers for units owned by: <strong id="offersOwnerName"></strong></p>
+                        <h2>💼 Business Offers & Proposals Management</h2>
+                        <p style="color: #666; margin-top: 5px;">Showing business opportunities for: <strong id="offersOwnerName"></strong></p>
                     </div>
                     <button onclick="exportOffersToCSV()" class="export-btn">📥 Export CSV</button>
                 </div>
@@ -588,8 +592,8 @@
             <div id="tenantsManagementSection" class="tenants-management-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <div>
-                        <h2>👥 Tenants Management</h2>
-                        <p style="color: #666; margin-top: 5px;">Showing tenants for units owned by: <strong id="tenantsOwnerName"></strong></p>
+                        <h2>👥 People & Tenants Management</h2>
+                        <p style="color: #666; margin-top: 5px;">Showing residents for properties owned by: <strong id="tenantsOwnerName"></strong></p>
                     </div>
                     <button onclick="exportTenantsToCSV()" class="export-btn">📥 Export CSV</button>
                 </div>
