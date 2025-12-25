@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Property Owner Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -346,6 +347,27 @@
             transform: translateY(-2px);
             background: #218838;
         }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+        }
+        .chart-container h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
         @media (max-width: 768px) {
             .content { padding: 20px; }
             h1 { font-size: 1.5rem; }
@@ -358,6 +380,9 @@
             }
             .search-box {
                 max-width: 100%;
+            }
+            .charts-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -465,6 +490,33 @@
                     <div class="stat-card">
                         <div class="number" id="vacantUnits">0</div>
                         <div class="label">Vacant</div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>📊 Units by Status</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="unitsStatusChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>🏢 Units by Type</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="unitsTypeChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>💼 Offers by Status</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="offersStatusChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>💰 Rent Overview</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="rentOverviewChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -743,6 +795,12 @@
         let allUnits = [];
         let allOffers = [];
         let allTenants = [];
+
+        // Chart instances
+        let unitsStatusChart = null;
+        let unitsTypeChart = null;
+        let offersStatusChart = null;
+        let rentOverviewChart = null;
 
         // Sorting and filtering state
         let unitsSortColumn = null;
@@ -1101,6 +1159,9 @@
                     allTenants = [];
                 }
 
+                // Render charts after all data is loaded
+                renderCharts();
+
             } catch (error) {
                 console.error('❌ Error loading data:', error);
                 document.getElementById('unitsList').innerHTML = '<div class="alert alert-danger">Error: ' + error.message + '</div>';
@@ -1228,6 +1289,224 @@
             if (totalOffers !== null) document.getElementById('totalOffers').textContent = totalOffers;
             if (occupied !== null) document.getElementById('occupiedUnits').textContent = occupied;
             if (vacant !== null) document.getElementById('vacantUnits').textContent = vacant;
+        }
+
+        function renderCharts() {
+            renderUnitsStatusChart();
+            renderUnitsTypeChart();
+            renderOffersStatusChart();
+            renderRentOverviewChart();
+        }
+
+        function renderUnitsStatusChart() {
+            const ctx = document.getElementById('unitsStatusChart');
+            if (!ctx) return;
+
+            // Count units by status
+            const statusCounts = {};
+            allUnits.forEach(unit => {
+                const status = unit.fields.Status || 'Unknown';
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
+            });
+
+            // Destroy existing chart if it exists
+            if (unitsStatusChart) {
+                unitsStatusChart.destroy();
+            }
+
+            unitsStatusChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(statusCounts),
+                    datasets: [{
+                        data: Object.values(statusCounts),
+                        backgroundColor: [
+                            '#28a745',  // Green for Occupied
+                            '#ffc107',  // Yellow for Vacant
+                            '#17a2b8',  // Blue for Under Renovation
+                            '#6c757d'   // Gray for Off Market
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderUnitsTypeChart() {
+            const ctx = document.getElementById('unitsTypeChart');
+            if (!ctx) return;
+
+            // Count units by type
+            const typeCounts = {};
+            allUnits.forEach(unit => {
+                const type = unit.fields['Unit Type'] || 'Unknown';
+                typeCounts[type] = (typeCounts[type] || 0) + 1;
+            });
+
+            // Destroy existing chart if it exists
+            if (unitsTypeChart) {
+                unitsTypeChart.destroy();
+            }
+
+            unitsTypeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(typeCounts),
+                    datasets: [{
+                        label: 'Number of Units',
+                        data: Object.values(typeCounts),
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderOffersStatusChart() {
+            const ctx = document.getElementById('offersStatusChart');
+            if (!ctx) return;
+
+            // Count offers by status
+            const statusCounts = {};
+            allOffers.forEach(offer => {
+                const status = offer.fields['Bid Status'] || 'Pending';
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
+            });
+
+            // Destroy existing chart if it exists
+            if (offersStatusChart) {
+                offersStatusChart.destroy();
+            }
+
+            offersStatusChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(statusCounts),
+                    datasets: [{
+                        data: Object.values(statusCounts),
+                        backgroundColor: [
+                            '#28a745',  // Green for Accepted
+                            '#ffc107',  // Yellow for Pending
+                            '#dc3545',  // Red for Rejected
+                            '#17a2b8',  // Blue for Countered
+                            '#6c757d'   // Gray for Withdrawn
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderRentOverviewChart() {
+            const ctx = document.getElementById('rentOverviewChart');
+            if (!ctx) return;
+
+            // Get average base rent and asking rent
+            let totalBaseRent = 0;
+            let totalAskingRent = 0;
+            let count = 0;
+
+            allUnits.forEach(unit => {
+                const baseRent = unit.fields['Base Rent'] || 0;
+                const askingRent = unit.fields['Asking Rent'] || 0;
+                if (baseRent > 0 || askingRent > 0) {
+                    totalBaseRent += baseRent;
+                    totalAskingRent += askingRent;
+                    count++;
+                }
+            });
+
+            const avgBaseRent = count > 0 ? totalBaseRent / count : 0;
+            const avgAskingRent = count > 0 ? totalAskingRent / count : 0;
+
+            // Destroy existing chart if it exists
+            if (rentOverviewChart) {
+                rentOverviewChart.destroy();
+            }
+
+            rentOverviewChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Average Base Rent', 'Average Asking Rent'],
+                    datasets: [{
+                        label: 'Amount ($)',
+                        data: [avgBaseRent, avgAskingRent],
+                        backgroundColor: [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(118, 75, 162, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(102, 126, 234, 1)',
+                            'rgba(118, 75, 162, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '$' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         function sortUnits(column) {
