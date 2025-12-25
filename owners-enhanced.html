@@ -292,6 +292,42 @@
             grid-template-columns: 1fr 1fr;
             gap: 15px;
         }
+        .search-box {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 1rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 20px;
+        }
+        th.sortable:hover {
+            background: #e9ecef;
+        }
+        th.sortable::after {
+            content: '⇅';
+            position: absolute;
+            right: 8px;
+            opacity: 0.3;
+        }
+        th.sortable.asc::after {
+            content: '↑';
+            opacity: 1;
+        }
+        th.sortable.desc::after {
+            content: '↓';
+            opacity: 1;
+        }
         @media (max-width: 768px) {
             .content { padding: 20px; }
             h1 { font-size: 1.5rem; }
@@ -301,6 +337,9 @@
             .modal-content {
                 margin: 10% auto;
                 width: 95%;
+            }
+            .search-box {
+                max-width: 100%;
             }
         }
     </style>
@@ -677,6 +716,17 @@
         let allUnits = [];
         let allOffers = [];
         let allTenants = [];
+
+        // Sorting and filtering state
+        let unitsSortColumn = null;
+        let unitsSortDirection = 'asc';
+        let unitsSearchTerm = '';
+        let offersSortColumn = null;
+        let offersSortDirection = 'asc';
+        let offersSearchTerm = '';
+        let tenantsSortColumn = null;
+        let tenantsSortDirection = 'asc';
+        let tenantsSearchTerm = '';
 
         window.onload = function() {
             const config = getConfig();
@@ -1119,6 +1169,21 @@
             if (vacant !== null) document.getElementById('vacantUnits').textContent = vacant;
         }
 
+        function sortUnits(column) {
+            if (unitsSortColumn === column) {
+                unitsSortDirection = unitsSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                unitsSortColumn = column;
+                unitsSortDirection = 'asc';
+            }
+            displayUnitsManagement();
+        }
+
+        function filterUnits(searchTerm) {
+            unitsSearchTerm = searchTerm.toLowerCase();
+            displayUnitsManagement();
+        }
+
         function displayUnitsManagement() {
             if (!allUnits || allUnits.length === 0) {
                 document.getElementById('unitsManagementList').innerHTML = `
@@ -1131,25 +1196,89 @@
                 return;
             }
 
+            // Filter units based on search term
+            let filteredUnits = allUnits.filter(unit => {
+                if (!unitsSearchTerm) return true;
+                const fields = unit.fields;
+                const searchableText = [
+                    fields['Unit ID'],
+                    fields.Name,
+                    fields['Unit Type'],
+                    fields.Status
+                ].join(' ').toLowerCase();
+                return searchableText.includes(unitsSearchTerm);
+            });
+
+            // Sort units
+            if (unitsSortColumn) {
+                filteredUnits.sort((a, b) => {
+                    let aVal, bVal;
+                    switch(unitsSortColumn) {
+                        case 'unitId':
+                            aVal = a.fields['Unit ID'] || '';
+                            bVal = b.fields['Unit ID'] || '';
+                            break;
+                        case 'name':
+                            aVal = a.fields.Name || '';
+                            bVal = b.fields.Name || '';
+                            break;
+                        case 'type':
+                            aVal = a.fields['Unit Type'] || '';
+                            bVal = b.fields['Unit Type'] || '';
+                            break;
+                        case 'status':
+                            aVal = a.fields.Status || '';
+                            bVal = b.fields.Status || '';
+                            break;
+                        case 'baseRent':
+                            aVal = a.fields['Base Rent'] || 0;
+                            bVal = b.fields['Base Rent'] || 0;
+                            break;
+                        case 'askingRent':
+                            aVal = a.fields['Asking Rent'] || 0;
+                            bVal = b.fields['Asking Rent'] || 0;
+                            break;
+                        case 'sqft':
+                            aVal = a.fields['Square Feet'] || 0;
+                            bVal = b.fields['Square Feet'] || 0;
+                            break;
+                        case 'floor':
+                            aVal = a.fields.Floor || 0;
+                            bVal = b.fields.Floor || 0;
+                            break;
+                        default:
+                            return 0;
+                    }
+
+                    if (typeof aVal === 'number' && typeof bVal === 'number') {
+                        return unitsSortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                    } else {
+                        const comparison = String(aVal).localeCompare(String(bVal));
+                        return unitsSortDirection === 'asc' ? comparison : -comparison;
+                    }
+                });
+            }
+
             const tableHtml = `
+                <input type="text" class="search-box" placeholder="Search units..." value="${unitsSearchTerm}" oninput="filterUnits(this.value)">
                 <div style="overflow-x: auto;">
                     <table>
                         <thead>
                             <tr>
-                                <th>Unit ID</th>
-                                <th>Name</th>
-                                <th>Type</th>
-                                <th>Status</th>
-                                <th>Base Rent</th>
-                                <th>Asking Rent</th>
-                                <th>Sqft</th>
+                                <th class="sortable ${unitsSortColumn === 'unitId' ? unitsSortDirection : ''}" onclick="sortUnits('unitId')">Unit ID</th>
+                                <th class="sortable ${unitsSortColumn === 'name' ? unitsSortDirection : ''}" onclick="sortUnits('name')">Name</th>
+                                <th class="sortable ${unitsSortColumn === 'type' ? unitsSortDirection : ''}" onclick="sortUnits('type')">Type</th>
+                                <th class="sortable ${unitsSortColumn === 'status' ? unitsSortDirection : ''}" onclick="sortUnits('status')">Status</th>
+                                <th class="sortable ${unitsSortColumn === 'baseRent' ? unitsSortDirection : ''}" onclick="sortUnits('baseRent')">Base Rent</th>
+                                <th class="sortable ${unitsSortColumn === 'askingRent' ? unitsSortDirection : ''}" onclick="sortUnits('askingRent')">Asking Rent</th>
+                                <th class="sortable ${unitsSortColumn === 'sqft' ? unitsSortDirection : ''}" onclick="sortUnits('sqft')">Sqft</th>
                                 <th>Bed/Bath</th>
-                                <th>Floor</th>
+                                <th class="sortable ${unitsSortColumn === 'floor' ? unitsSortDirection : ''}" onclick="sortUnits('floor')">Floor</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${allUnits.map(unit => {
+                            ${filteredUnits.map(unit => {
                                 const fields = unit.fields;
                                 const bedBath = `${fields.Bedrooms || 0}/${fields.Bathrooms || 0}`;
                                 const statusClass = fields.Status === 'Occupied' ? 'status-accepted' :
@@ -1177,11 +1306,26 @@
                     </table>
                 </div>
                 <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; font-size: 0.9rem;">
-                    <strong>📊 Summary:</strong> ${allUnits.length} unit(s) total
+                    <strong>📊 Summary:</strong> ${filteredUnits.length} of ${allUnits.length} unit(s)${unitsSearchTerm ? ' (filtered)' : ''}
                 </div>
             `;
 
             document.getElementById('unitsManagementList').innerHTML = tableHtml;
+        }
+
+        function sortOffers(column) {
+            if (offersSortColumn === column) {
+                offersSortDirection = offersSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                offersSortColumn = column;
+                offersSortDirection = 'asc';
+            }
+            displayOffersManagement();
+        }
+
+        function filterOffers(searchTerm) {
+            offersSearchTerm = searchTerm.toLowerCase();
+            displayOffersManagement();
         }
 
         function displayOffersManagement() {
@@ -1196,24 +1340,88 @@
                 return;
             }
 
+            // Filter offers based on search term
+            let filteredOffers = allOffers.filter(offer => {
+                if (!offersSearchTerm) return true;
+                const fields = offer.fields;
+                const searchableText = [
+                    fields['Bid ID'],
+                    fields['Name (from Unit) (from Availability Period)'],
+                    fields['Email (from Tenant (Linked))'],
+                    fields['Bid Status']
+                ].join(' ').toLowerCase();
+                return searchableText.includes(offersSearchTerm);
+            });
+
+            // Sort offers
+            if (offersSortColumn) {
+                filteredOffers.sort((a, b) => {
+                    let aVal, bVal;
+                    switch(offersSortColumn) {
+                        case 'offerId':
+                            aVal = a.fields['Bid ID'] || '';
+                            bVal = b.fields['Bid ID'] || '';
+                            break;
+                        case 'unit':
+                            aVal = (a.fields['Name (from Unit) (from Availability Period)'] && a.fields['Name (from Unit) (from Availability Period)'][0]) || '';
+                            bVal = (b.fields['Name (from Unit) (from Availability Period)'] && b.fields['Name (from Unit) (from Availability Period)'][0]) || '';
+                            break;
+                        case 'tenant':
+                            aVal = (a.fields['Email (from Tenant (Linked))'] && a.fields['Email (from Tenant (Linked))'][0]) || '';
+                            bVal = (b.fields['Email (from Tenant (Linked))'] && b.fields['Email (from Tenant (Linked))'][0]) || '';
+                            break;
+                        case 'bidAmount':
+                            aVal = a.fields['Bid Amount'] || 0;
+                            bVal = b.fields['Bid Amount'] || 0;
+                            break;
+                        case 'status':
+                            aVal = a.fields['Bid Status'] || '';
+                            bVal = b.fields['Bid Status'] || '';
+                            break;
+                        case 'submissionDate':
+                            aVal = a.fields['Submission Date'] ? new Date(a.fields['Submission Date']).getTime() : 0;
+                            bVal = b.fields['Submission Date'] ? new Date(b.fields['Submission Date']).getTime() : 0;
+                            break;
+                        case 'moveInDate':
+                            aVal = a.fields['Move-in Date'] ? new Date(a.fields['Move-in Date']).getTime() : 0;
+                            bVal = b.fields['Move-in Date'] ? new Date(b.fields['Move-in Date']).getTime() : 0;
+                            break;
+                        case 'leaseTerm':
+                            aVal = a.fields['Lease Term (Months)'] || 0;
+                            bVal = b.fields['Lease Term (Months)'] || 0;
+                            break;
+                        default:
+                            return 0;
+                    }
+
+                    if (typeof aVal === 'number' && typeof bVal === 'number') {
+                        return offersSortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                    } else {
+                        const comparison = String(aVal).localeCompare(String(bVal));
+                        return offersSortDirection === 'asc' ? comparison : -comparison;
+                    }
+                });
+            }
+
             const tableHtml = `
+                <input type="text" class="search-box" placeholder="Search offers..." value="${offersSearchTerm}" oninput="filterOffers(this.value)">
                 <div style="overflow-x: auto;">
                     <table>
                         <thead>
                             <tr>
-                                <th>Offer ID</th>
-                                <th>Unit</th>
-                                <th>Tenant Email</th>
-                                <th>Bid Amount</th>
-                                <th>Status</th>
-                                <th>Submission Date</th>
-                                <th>Move-in Date</th>
-                                <th>Lease Term</th>
+                                <th class="sortable ${offersSortColumn === 'offerId' ? offersSortDirection : ''}" onclick="sortOffers('offerId')">Offer ID</th>
+                                <th class="sortable ${offersSortColumn === 'unit' ? offersSortDirection : ''}" onclick="sortOffers('unit')">Unit</th>
+                                <th class="sortable ${offersSortColumn === 'tenant' ? offersSortDirection : ''}" onclick="sortOffers('tenant')">Tenant Email</th>
+                                <th class="sortable ${offersSortColumn === 'bidAmount' ? offersSortDirection : ''}" onclick="sortOffers('bidAmount')">Bid Amount</th>
+                                <th class="sortable ${offersSortColumn === 'status' ? offersSortDirection : ''}" onclick="sortOffers('status')">Status</th>
+                                <th class="sortable ${offersSortColumn === 'submissionDate' ? offersSortDirection : ''}" onclick="sortOffers('submissionDate')">Submission Date</th>
+                                <th class="sortable ${offersSortColumn === 'moveInDate' ? offersSortDirection : ''}" onclick="sortOffers('moveInDate')">Move-in Date</th>
+                                <th class="sortable ${offersSortColumn === 'leaseTerm' ? offersSortDirection : ''}" onclick="sortOffers('leaseTerm')">Lease Term</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${allOffers.map(offer => {
+                            ${filteredOffers.map(offer => {
                                 const fields = offer.fields;
                                 const status = fields['Bid Status'] || 'Pending';
                                 const statusClass = status === 'Accepted' ? 'status-accepted' :
@@ -1246,17 +1454,32 @@
                     </table>
                 </div>
                 <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; font-size: 0.9rem;">
-                    <strong>📊 Summary:</strong> ${allOffers.length} offer(s) total
-                    ${allOffers.filter(o => o.fields['Bid Status'] === 'Pending').length > 0 ?
-                        ` | <span class="status-pending">${allOffers.filter(o => o.fields['Bid Status'] === 'Pending').length} Pending</span>` : ''}
-                    ${allOffers.filter(o => o.fields['Bid Status'] === 'Accepted').length > 0 ?
-                        ` | <span class="status-accepted">${allOffers.filter(o => o.fields['Bid Status'] === 'Accepted').length} Accepted</span>` : ''}
-                    ${allOffers.filter(o => o.fields['Bid Status'] === 'Rejected').length > 0 ?
-                        ` | <span class="status-rejected">${allOffers.filter(o => o.fields['Bid Status'] === 'Rejected').length} Rejected</span>` : ''}
+                    <strong>📊 Summary:</strong> ${filteredOffers.length} of ${allOffers.length} offer(s)${offersSearchTerm ? ' (filtered)' : ''}
+                    ${filteredOffers.filter(o => o.fields['Bid Status'] === 'Pending').length > 0 ?
+                        ` | <span class="status-pending">${filteredOffers.filter(o => o.fields['Bid Status'] === 'Pending').length} Pending</span>` : ''}
+                    ${filteredOffers.filter(o => o.fields['Bid Status'] === 'Accepted').length > 0 ?
+                        ` | <span class="status-accepted">${filteredOffers.filter(o => o.fields['Bid Status'] === 'Accepted').length} Accepted</span>` : ''}
+                    ${filteredOffers.filter(o => o.fields['Bid Status'] === 'Rejected').length > 0 ?
+                        ` | <span class="status-rejected">${filteredOffers.filter(o => o.fields['Bid Status'] === 'Rejected').length} Rejected</span>` : ''}
                 </div>
             `;
 
             document.getElementById('offersManagementList').innerHTML = tableHtml;
+        }
+
+        function sortTenants(column) {
+            if (tenantsSortColumn === column) {
+                tenantsSortDirection = tenantsSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                tenantsSortColumn = column;
+                tenantsSortDirection = 'asc';
+            }
+            displayTenantsManagement();
+        }
+
+        function filterTenants(searchTerm) {
+            tenantsSearchTerm = searchTerm.toLowerCase();
+            displayTenantsManagement();
         }
 
         function displayTenantsManagement() {
@@ -1271,23 +1494,84 @@
                 return;
             }
 
+            // Filter tenants based on search term
+            let filteredTenants = allTenants.filter(tenant => {
+                if (!tenantsSearchTerm) return true;
+                const fields = tenant.fields;
+                const searchableText = [
+                    fields.Name,
+                    fields.Email,
+                    fields.Phone,
+                    fields['Current Unit'],
+                    fields.Status
+                ].join(' ').toLowerCase();
+                return searchableText.includes(tenantsSearchTerm);
+            });
+
+            // Sort tenants
+            if (tenantsSortColumn) {
+                filteredTenants.sort((a, b) => {
+                    let aVal, bVal;
+                    switch(tenantsSortColumn) {
+                        case 'name':
+                            aVal = a.fields.Name || '';
+                            bVal = b.fields.Name || '';
+                            break;
+                        case 'email':
+                            aVal = a.fields.Email || '';
+                            bVal = b.fields.Email || '';
+                            break;
+                        case 'phone':
+                            aVal = a.fields.Phone || '';
+                            bVal = b.fields.Phone || '';
+                            break;
+                        case 'currentUnit':
+                            aVal = (a.fields['Current Unit'] && a.fields['Current Unit'][0]) || '';
+                            bVal = (b.fields['Current Unit'] && b.fields['Current Unit'][0]) || '';
+                            break;
+                        case 'moveInDate':
+                            aVal = a.fields['Move-in Date'] ? new Date(a.fields['Move-in Date']).getTime() : 0;
+                            bVal = b.fields['Move-in Date'] ? new Date(b.fields['Move-in Date']).getTime() : 0;
+                            break;
+                        case 'leaseEndDate':
+                            aVal = a.fields['Lease End Date'] ? new Date(a.fields['Lease End Date']).getTime() : 0;
+                            bVal = b.fields['Lease End Date'] ? new Date(b.fields['Lease End Date']).getTime() : 0;
+                            break;
+                        case 'status':
+                            aVal = a.fields.Status || '';
+                            bVal = b.fields.Status || '';
+                            break;
+                        default:
+                            return 0;
+                    }
+
+                    if (typeof aVal === 'number' && typeof bVal === 'number') {
+                        return tenantsSortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                    } else {
+                        const comparison = String(aVal).localeCompare(String(bVal));
+                        return tenantsSortDirection === 'asc' ? comparison : -comparison;
+                    }
+                });
+            }
+
             const tableHtml = `
+                <input type="text" class="search-box" placeholder="Search tenants..." value="${tenantsSearchTerm}" oninput="filterTenants(this.value)">
                 <div style="overflow-x: auto;">
                     <table>
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Phone</th>
-                                <th>Current Unit</th>
-                                <th>Move-in Date</th>
-                                <th>Lease End Date</th>
-                                <th>Status</th>
+                                <th class="sortable ${tenantsSortColumn === 'name' ? tenantsSortDirection : ''}" onclick="sortTenants('name')">Name</th>
+                                <th class="sortable ${tenantsSortColumn === 'email' ? tenantsSortDirection : ''}" onclick="sortTenants('email')">Email</th>
+                                <th class="sortable ${tenantsSortColumn === 'phone' ? tenantsSortDirection : ''}" onclick="sortTenants('phone')">Phone</th>
+                                <th class="sortable ${tenantsSortColumn === 'currentUnit' ? tenantsSortDirection : ''}" onclick="sortTenants('currentUnit')">Current Unit</th>
+                                <th class="sortable ${tenantsSortColumn === 'moveInDate' ? tenantsSortDirection : ''}" onclick="sortTenants('moveInDate')">Move-in Date</th>
+                                <th class="sortable ${tenantsSortColumn === 'leaseEndDate' ? tenantsSortDirection : ''}" onclick="sortTenants('leaseEndDate')">Lease End Date</th>
+                                <th class="sortable ${tenantsSortColumn === 'status' ? tenantsSortDirection : ''}" onclick="sortTenants('status')">Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${allTenants.map(tenant => {
+                            ${filteredTenants.map(tenant => {
                                 const fields = tenant.fields;
                                 const name = fields.Name || 'N/A';
                                 const email = fields.Email || 'N/A';
@@ -1319,13 +1603,13 @@
                     </table>
                 </div>
                 <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; font-size: 0.9rem;">
-                    <strong>📊 Summary:</strong> ${allTenants.length} tenant(s) total
-                    ${allTenants.filter(t => t.fields.Status === 'Active').length > 0 ?
-                        ` | <span class="status-accepted">${allTenants.filter(t => t.fields.Status === 'Active').length} Active</span>` : ''}
-                    ${allTenants.filter(t => t.fields.Status === 'Prospective').length > 0 ?
-                        ` | <span class="status-pending">${allTenants.filter(t => t.fields.Status === 'Prospective').length} Prospective</span>` : ''}
-                    ${allTenants.filter(t => t.fields.Status === 'Inactive').length > 0 ?
-                        ` | <span class="status-rejected">${allTenants.filter(t => t.fields.Status === 'Inactive').length} Inactive</span>` : ''}
+                    <strong>📊 Summary:</strong> ${filteredTenants.length} of ${allTenants.length} tenant(s)${tenantsSearchTerm ? ' (filtered)' : ''}
+                    ${filteredTenants.filter(t => t.fields.Status === 'Active').length > 0 ?
+                        ` | <span class="status-accepted">${filteredTenants.filter(t => t.fields.Status === 'Active').length} Active</span>` : ''}
+                    ${filteredTenants.filter(t => t.fields.Status === 'Prospective').length > 0 ?
+                        ` | <span class="status-pending">${filteredTenants.filter(t => t.fields.Status === 'Prospective').length} Prospective</span>` : ''}
+                    ${filteredTenants.filter(t => t.fields.Status === 'Inactive').length > 0 ?
+                        ` | <span class="status-rejected">${filteredTenants.filter(t => t.fields.Status === 'Inactive').length} Inactive</span>` : ''}
                 </div>
             `;
 
