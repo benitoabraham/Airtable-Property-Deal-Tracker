@@ -57,8 +57,8 @@
             transform: translateY(-2px);
         }
         .content { padding: 40px; }
-        .setup-section, .login-section, .dashboard-section { display: none; }
-        .setup-section.active, .login-section.active, .dashboard-section.active { display: block; }
+        .setup-section, .login-section, .dashboard-section, .units-management-section { display: none; }
+        .setup-section.active, .login-section.active, .dashboard-section.active, .units-management-section.active { display: block; }
         .card {
             background: #f8f9fa;
             border-radius: 8px;
@@ -321,10 +321,10 @@
         </header>
 
         <nav id="mainNav" style="display: none;">
-            <a href="#" class="nav-link active" onclick="showDashboard(); return false;">
+            <a href="#" class="nav-link" id="navDashboard" onclick="showDashboard(); return false;">
                 <span class="icon">📊</span> Dashboard
             </a>
-            <a href="https://airtable.com/appeusp2Y6vN32ms2/tblXWa5TwsS9MILa8" target="_blank" class="nav-link">
+            <a href="#" class="nav-link" id="navUnitsManagement" onclick="showUnitsManagement(); return false;">
                 <span class="icon">🏢</span> Units Management
             </a>
             <a href="https://airtable.com/appeusp2Y6vN32ms2" target="_blank" class="nav-link">
@@ -406,7 +406,7 @@
                 </div>
 
                 <div class="quick-links">
-                    <a href="https://airtable.com/appeusp2Y6vN32ms2/tblXWa5TwsS9MILa8" target="_blank" class="quick-link-card">
+                    <a href="#" onclick="showUnitsManagement(); return false;" class="quick-link-card">
                         <span class="icon">🏢</span>
                         <h3>Units Management</h3>
                         <p>View and manage your units</p>
@@ -434,6 +434,17 @@
                 <div class="card">
                     <h3>💰 Offers for Your Units</h3>
                     <div id="offersList"></div>
+                </div>
+            </div>
+
+            <div id="unitsManagementSection" class="units-management-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>🏢 Units Management</h2>
+                    <button onclick="showAddUnitModal()" class="btn-success">+ Add New Unit</button>
+                </div>
+
+                <div class="card">
+                    <div id="unitsManagementList"></div>
                 </div>
             </div>
         </div>
@@ -695,7 +706,27 @@
             document.getElementById('setupSection').classList.remove('active');
             document.getElementById('loginSection').classList.remove('active');
             document.getElementById('dashboardSection').classList.add('active');
+            document.getElementById('unitsManagementSection').classList.remove('active');
             document.getElementById('mainNav').style.display = 'flex';
+
+            // Update nav active states
+            document.getElementById('navDashboard').classList.add('active');
+            document.getElementById('navUnitsManagement').classList.remove('active');
+        }
+
+        function showUnitsManagement() {
+            document.getElementById('setupSection').classList.remove('active');
+            document.getElementById('loginSection').classList.remove('active');
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('unitsManagementSection').classList.add('active');
+            document.getElementById('mainNav').style.display = 'flex';
+
+            // Update nav active states
+            document.getElementById('navDashboard').classList.remove('active');
+            document.getElementById('navUnitsManagement').classList.add('active');
+
+            // Load units management view
+            displayUnitsManagement();
         }
 
         async function login(event) {
@@ -984,6 +1015,71 @@
             if (vacant !== null) document.getElementById('vacantUnits').textContent = vacant;
         }
 
+        function displayUnitsManagement() {
+            if (!allUnits || allUnits.length === 0) {
+                document.getElementById('unitsManagementList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🏢</div>
+                        <h3>No Units Found</h3>
+                        <p>You don't have any units yet. Click "Add New Unit" to get started.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableHtml = `
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Unit ID</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Base Rent</th>
+                                <th>Asking Rent</th>
+                                <th>Sqft</th>
+                                <th>Bed/Bath</th>
+                                <th>Floor</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${allUnits.map(unit => {
+                                const fields = unit.fields;
+                                const bedBath = `${fields.Bedrooms || 0}/${fields.Bathrooms || 0}`;
+                                const statusClass = fields.Status === 'Occupied' ? 'status-accepted' :
+                                                   fields.Status === 'Vacant' ? 'status-pending' : '';
+
+                                return `
+                                    <tr>
+                                        <td><strong>${fields['Unit ID'] || 'N/A'}</strong></td>
+                                        <td>${fields.Name || 'N/A'}</td>
+                                        <td>${fields['Unit Type'] || 'N/A'}</td>
+                                        <td class="${statusClass}"><strong>${fields.Status || 'N/A'}</strong></td>
+                                        <td>$${(fields['Base Rent'] || 0).toLocaleString()}</td>
+                                        <td>$${(fields['Asking Rent'] || 0).toLocaleString()}</td>
+                                        <td>${(fields['Square Feet'] || 0).toLocaleString()}</td>
+                                        <td>${bedBath}</td>
+                                        <td>${fields.Floor || 'N/A'}</td>
+                                        <td>
+                                            <button class="btn-small" onclick="editUnit('${unit.id}')">✏️ Edit</button>
+                                            <button class="btn-small btn-secondary" onclick="viewUnitInAirtable('${unit.id}')">👁️ View</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; font-size: 0.9rem;">
+                    <strong>📊 Summary:</strong> ${allUnits.length} unit(s) total
+                </div>
+            `;
+
+            document.getElementById('unitsManagementList').innerHTML = tableHtml;
+        }
+
         // Edit Unit Functions
         function editUnit(unitId) {
             const unit = allUnits.find(u => u.id === unitId);
@@ -1060,7 +1156,12 @@
                 if (response.ok) {
                     closeEditUnitModal();
                     alert('✅ Unit updated successfully!');
-                    loadDashboardData();
+                    await loadDashboardData();
+
+                    // Refresh Units Management view if it's active
+                    if (document.getElementById('unitsManagementSection').classList.contains('active')) {
+                        displayUnitsManagement();
+                    }
                 } else {
                     const error = await response.json();
                     alert('❌ Error updating unit: ' + (error.error?.message || 'Unknown error'));
@@ -1159,7 +1260,12 @@
 
                 closeAddUnitModal();
                 alert('✅ Unit added successfully!');
-                loadDashboardData();
+                await loadDashboardData();
+
+                // Refresh Units Management view if it's active
+                if (document.getElementById('unitsManagementSection').classList.contains('active')) {
+                    displayUnitsManagement();
+                }
 
             } catch (error) {
                 alert('❌ Error: ' + error.message);
