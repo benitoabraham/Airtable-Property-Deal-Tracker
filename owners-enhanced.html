@@ -57,8 +57,8 @@
             transform: translateY(-2px);
         }
         .content { padding: 40px; }
-        .setup-section, .login-section, .dashboard-section, .units-management-section { display: none; }
-        .setup-section.active, .login-section.active, .dashboard-section.active, .units-management-section.active { display: block; }
+        .setup-section, .login-section, .dashboard-section, .units-management-section, .offers-management-section { display: none; }
+        .setup-section.active, .login-section.active, .dashboard-section.active, .units-management-section.active, .offers-management-section.active { display: block; }
         .card {
             background: #f8f9fa;
             border-radius: 8px;
@@ -327,6 +327,9 @@
             <a href="#" class="nav-link" id="navUnitsManagement" onclick="showUnitsManagement(); return false;">
                 <span class="icon">🏢</span> Units Management
             </a>
+            <a href="#" class="nav-link" id="navOffersManagement" onclick="showOffersManagement(); return false;">
+                <span class="icon">💼</span> Offers Management
+            </a>
             <a href="https://airtable.com/appeusp2Y6vN32ms2" target="_blank" class="nav-link">
                 <span class="icon">📋</span> Full Database
             </a>
@@ -411,10 +414,10 @@
                         <h3>Units Management</h3>
                         <p>View and manage your units</p>
                     </a>
-                    <a href="https://airtable.com/appeusp2Y6vN32ms2/tbluU6FAGGCKOyjaI" target="_blank" class="quick-link-card">
+                    <a href="#" onclick="showOffersManagement(); return false;" class="quick-link-card">
                         <span class="icon">💼</span>
-                        <h3>Offers</h3>
-                        <p>Review offers</p>
+                        <h3>Offers Management</h3>
+                        <p>Review and manage offers</p>
                     </a>
                     <a href="https://airtable.com/appeusp2Y6vN32ms2/tblGiDf8lveCYVfKv" target="_blank" class="quick-link-card">
                         <span class="icon">👥</span>
@@ -448,6 +451,17 @@
 
                 <div class="card">
                     <div id="unitsManagementList"></div>
+                </div>
+            </div>
+
+            <div id="offersManagementSection" class="offers-management-section">
+                <div style="margin-bottom: 20px;">
+                    <h2>💼 Offers Management</h2>
+                    <p style="color: #666; margin-top: 5px;">Showing offers for units owned by: <strong id="offersOwnerName"></strong></p>
+                </div>
+
+                <div class="card">
+                    <div id="offersManagementList"></div>
                 </div>
             </div>
         </div>
@@ -710,11 +724,13 @@
             document.getElementById('loginSection').classList.remove('active');
             document.getElementById('dashboardSection').classList.add('active');
             document.getElementById('unitsManagementSection').classList.remove('active');
+            document.getElementById('offersManagementSection').classList.remove('active');
             document.getElementById('mainNav').style.display = 'flex';
 
             // Update nav active states
             document.getElementById('navDashboard').classList.add('active');
             document.getElementById('navUnitsManagement').classList.remove('active');
+            document.getElementById('navOffersManagement').classList.remove('active');
         }
 
         function showUnitsManagement() {
@@ -722,11 +738,13 @@
             document.getElementById('loginSection').classList.remove('active');
             document.getElementById('dashboardSection').classList.remove('active');
             document.getElementById('unitsManagementSection').classList.add('active');
+            document.getElementById('offersManagementSection').classList.remove('active');
             document.getElementById('mainNav').style.display = 'flex';
 
             // Update nav active states
             document.getElementById('navDashboard').classList.remove('active');
             document.getElementById('navUnitsManagement').classList.add('active');
+            document.getElementById('navOffersManagement').classList.remove('active');
 
             // Update owner name display
             if (currentOwner) {
@@ -735,6 +753,28 @@
 
             // Load units management view
             displayUnitsManagement();
+        }
+
+        function showOffersManagement() {
+            document.getElementById('setupSection').classList.remove('active');
+            document.getElementById('loginSection').classList.remove('active');
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('unitsManagementSection').classList.remove('active');
+            document.getElementById('offersManagementSection').classList.add('active');
+            document.getElementById('mainNav').style.display = 'flex';
+
+            // Update nav active states
+            document.getElementById('navDashboard').classList.remove('active');
+            document.getElementById('navUnitsManagement').classList.remove('active');
+            document.getElementById('navOffersManagement').classList.add('active');
+
+            // Update owner name display
+            if (currentOwner) {
+                document.getElementById('offersOwnerName').textContent = currentOwner.name || currentOwner.email;
+            }
+
+            // Load offers management view
+            displayOffersManagement();
         }
 
         async function login(event) {
@@ -1093,6 +1133,86 @@
             document.getElementById('unitsManagementList').innerHTML = tableHtml;
         }
 
+        function displayOffersManagement() {
+            console.log('🔍 displayOffersManagement called');
+            console.log('📊 Current owner:', currentOwner);
+            console.log('💼 All offers count:', allOffers ? allOffers.length : 0);
+            console.log('💼 Offers data:', allOffers);
+
+            if (!allOffers || allOffers.length === 0) {
+                document.getElementById('offersManagementList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">💼</div>
+                        <h3>No Offers Found</h3>
+                        <p>There are no offers for your units at this time.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableHtml = `
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Offer ID</th>
+                                <th>Unit</th>
+                                <th>Tenant Email</th>
+                                <th>Bid Amount</th>
+                                <th>Status</th>
+                                <th>Submission Date</th>
+                                <th>Move-in Date</th>
+                                <th>Lease Term</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${allOffers.map(offer => {
+                                const fields = offer.fields;
+                                const status = fields['Bid Status'] || 'Pending';
+                                const statusClass = status === 'Accepted' ? 'status-accepted' :
+                                                   status === 'Rejected' ? 'status-rejected' :
+                                                   status === 'Pending' ? 'status-pending' : '';
+                                const unitName = fields['Name (from Unit) (from Availability Period)'];
+                                const tenantEmail = fields['Email (from Tenant (Linked))'];
+                                const bidAmount = fields['Bid Amount'] || 0;
+                                const submissionDate = fields['Submission Date'] ? new Date(fields['Submission Date']).toLocaleDateString() : 'N/A';
+                                const moveInDate = fields['Move-in Date'] ? new Date(fields['Move-in Date']).toLocaleDateString() : 'N/A';
+                                const leaseTerm = fields['Lease Term (Months)'] || 'N/A';
+
+                                return `
+                                    <tr>
+                                        <td><strong>${fields['Bid ID'] || 'N/A'}</strong></td>
+                                        <td>${unitName && unitName[0] ? unitName[0] : 'N/A'}</td>
+                                        <td>${tenantEmail && tenantEmail[0] ? tenantEmail[0] : 'N/A'}</td>
+                                        <td><strong>$${bidAmount.toLocaleString()}</strong></td>
+                                        <td class="${statusClass}"><strong>${status}</strong></td>
+                                        <td>${submissionDate}</td>
+                                        <td>${moveInDate}</td>
+                                        <td>${leaseTerm} ${leaseTerm !== 'N/A' ? 'months' : ''}</td>
+                                        <td>
+                                            <button class="btn-small" onclick="updateOfferStatus('${offer.id}')">✏️ Update</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; font-size: 0.9rem;">
+                    <strong>📊 Summary:</strong> ${allOffers.length} offer(s) total
+                    ${allOffers.filter(o => o.fields['Bid Status'] === 'Pending').length > 0 ?
+                        ` | <span class="status-pending">${allOffers.filter(o => o.fields['Bid Status'] === 'Pending').length} Pending</span>` : ''}
+                    ${allOffers.filter(o => o.fields['Bid Status'] === 'Accepted').length > 0 ?
+                        ` | <span class="status-accepted">${allOffers.filter(o => o.fields['Bid Status'] === 'Accepted').length} Accepted</span>` : ''}
+                    ${allOffers.filter(o => o.fields['Bid Status'] === 'Rejected').length > 0 ?
+                        ` | <span class="status-rejected">${allOffers.filter(o => o.fields['Bid Status'] === 'Rejected').length} Rejected</span>` : ''}
+                </div>
+            `;
+
+            document.getElementById('offersManagementList').innerHTML = tableHtml;
+        }
+
         // Edit Unit Functions
         function editUnit(unitId) {
             const unit = allUnits.find(u => u.id === unitId);
@@ -1345,7 +1465,12 @@
                 if (response.ok) {
                     closeUpdateOfferModal();
                     alert('✅ Offer updated successfully!');
-                    loadDashboardData();
+                    await loadDashboardData();
+
+                    // Refresh Offers Management view if it's active
+                    if (document.getElementById('offersManagementSection').classList.contains('active')) {
+                        displayOffersManagement();
+                    }
                 } else {
                     const error = await response.json();
                     alert('❌ Error updating offer: ' + (error.error?.message || 'Unknown error'));
