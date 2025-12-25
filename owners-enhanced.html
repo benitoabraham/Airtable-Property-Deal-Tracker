@@ -328,6 +328,24 @@
             content: '↓';
             opacity: 1;
         }
+        .export-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .export-btn:hover {
+            transform: translateY(-2px);
+            background: #218838;
+        }
         @media (max-width: 768px) {
             .content { padding: 20px; }
             h1 { font-size: 1.5rem; }
@@ -488,7 +506,10 @@
                         <h2>🏢 Units Management</h2>
                         <p style="color: #666; margin-top: 5px;">Showing units for: <strong id="unitsOwnerName"></strong></p>
                     </div>
-                    <button onclick="showAddUnitModal()" class="btn-success">+ Add New Unit</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="exportUnitsToCSV()" class="export-btn">📥 Export CSV</button>
+                        <button onclick="showAddUnitModal()" class="btn-success">+ Add New Unit</button>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -497,9 +518,12 @@
             </div>
 
             <div id="offersManagementSection" class="offers-management-section">
-                <div style="margin-bottom: 20px;">
-                    <h2>💼 Offers Management</h2>
-                    <p style="color: #666; margin-top: 5px;">Showing offers for units owned by: <strong id="offersOwnerName"></strong></p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2>💼 Offers Management</h2>
+                        <p style="color: #666; margin-top: 5px;">Showing offers for units owned by: <strong id="offersOwnerName"></strong></p>
+                    </div>
+                    <button onclick="exportOffersToCSV()" class="export-btn">📥 Export CSV</button>
                 </div>
 
                 <div class="card">
@@ -508,9 +532,12 @@
             </div>
 
             <div id="tenantsManagementSection" class="tenants-management-section">
-                <div style="margin-bottom: 20px;">
-                    <h2>👥 Tenants Management</h2>
-                    <p style="color: #666; margin-top: 5px;">Showing tenants for units owned by: <strong id="tenantsOwnerName"></strong></p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2>👥 Tenants Management</h2>
+                        <p style="color: #666; margin-top: 5px;">Showing tenants for units owned by: <strong id="tenantsOwnerName"></strong></p>
+                    </div>
+                    <button onclick="exportTenantsToCSV()" class="export-btn">📥 Export CSV</button>
                 </div>
 
                 <div class="card">
@@ -736,6 +763,40 @@
                 showSetup();
             }
         };
+
+        // CSV Export Utility Functions
+        function convertToCSV(data, headers) {
+            const csvRows = [];
+
+            // Add headers
+            csvRows.push(headers.join(','));
+
+            // Add data rows
+            for (const row of data) {
+                const values = headers.map(header => {
+                    const value = row[header];
+                    // Escape quotes and wrap in quotes if contains comma, quote, or newline
+                    const escaped = String(value || '').replace(/"/g, '""');
+                    return /[",\n]/.test(escaped) ? `"${escaped}"` : escaped;
+                });
+                csvRows.push(values.join(','));
+            }
+
+            return csvRows.join('\n');
+        }
+
+        function downloadCSV(csvContent, filename) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
         function getConfig() {
             const stored = localStorage.getItem(CONFIG_KEY);
@@ -1184,6 +1245,68 @@
             displayUnitsManagement();
         }
 
+        function exportUnitsToCSV() {
+            // Get filtered units (same logic as displayUnitsManagement)
+            let filteredUnits = allUnits.filter(unit => {
+                if (!unitsSearchTerm) return true;
+                const fields = unit.fields;
+                const searchableText = [
+                    fields['Unit ID'],
+                    fields.Name,
+                    fields['Unit Type'],
+                    fields.Status
+                ].join(' ').toLowerCase();
+                return searchableText.includes(unitsSearchTerm);
+            });
+
+            // Apply sorting if active
+            if (unitsSortColumn) {
+                filteredUnits.sort((a, b) => {
+                    let aVal, bVal;
+                    switch(unitsSortColumn) {
+                        case 'unitId': aVal = a.fields['Unit ID'] || ''; bVal = b.fields['Unit ID'] || ''; break;
+                        case 'name': aVal = a.fields.Name || ''; bVal = b.fields.Name || ''; break;
+                        case 'type': aVal = a.fields['Unit Type'] || ''; bVal = b.fields['Unit Type'] || ''; break;
+                        case 'status': aVal = a.fields.Status || ''; bVal = b.fields.Status || ''; break;
+                        case 'baseRent': aVal = a.fields['Base Rent'] || 0; bVal = b.fields['Base Rent'] || 0; break;
+                        case 'askingRent': aVal = a.fields['Asking Rent'] || 0; bVal = b.fields['Asking Rent'] || 0; break;
+                        case 'sqft': aVal = a.fields['Square Feet'] || 0; bVal = b.fields['Square Feet'] || 0; break;
+                        case 'floor': aVal = a.fields.Floor || 0; bVal = b.fields.Floor || 0; break;
+                        default: return 0;
+                    }
+                    if (typeof aVal === 'number' && typeof bVal === 'number') {
+                        return unitsSortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                    } else {
+                        const comparison = String(aVal).localeCompare(String(bVal));
+                        return unitsSortDirection === 'asc' ? comparison : -comparison;
+                    }
+                });
+            }
+
+            // Prepare data for CSV
+            const csvData = filteredUnits.map(unit => {
+                const fields = unit.fields;
+                return {
+                    'Unit ID': fields['Unit ID'] || '',
+                    'Name': fields.Name || '',
+                    'Type': fields['Unit Type'] || '',
+                    'Status': fields.Status || '',
+                    'Base Rent': fields['Base Rent'] || 0,
+                    'Asking Rent': fields['Asking Rent'] || 0,
+                    'Square Feet': fields['Square Feet'] || 0,
+                    'Bedrooms': fields.Bedrooms || 0,
+                    'Bathrooms': fields.Bathrooms || 0,
+                    'Floor': fields.Floor || '',
+                    'Description': fields.Description || ''
+                };
+            });
+
+            const headers = ['Unit ID', 'Name', 'Type', 'Status', 'Base Rent', 'Asking Rent', 'Square Feet', 'Bedrooms', 'Bathrooms', 'Floor', 'Description'];
+            const csv = convertToCSV(csvData, headers);
+            const timestamp = new Date().toISOString().slice(0, 10);
+            downloadCSV(csv, `units-${timestamp}.csv`);
+        }
+
         function displayUnitsManagement() {
             if (!allUnits || allUnits.length === 0) {
                 document.getElementById('unitsManagementList').innerHTML = `
@@ -1326,6 +1449,71 @@
         function filterOffers(searchTerm) {
             offersSearchTerm = searchTerm.toLowerCase();
             displayOffersManagement();
+        }
+
+        function exportOffersToCSV() {
+            // Get filtered offers (same logic as displayOffersManagement)
+            let filteredOffers = allOffers.filter(offer => {
+                if (!offersSearchTerm) return true;
+                const fields = offer.fields;
+                const searchableText = [
+                    fields['Bid ID'],
+                    fields['Name (from Unit) (from Availability Period)'],
+                    fields['Email (from Tenant (Linked))'],
+                    fields['Bid Status']
+                ].join(' ').toLowerCase();
+                return searchableText.includes(offersSearchTerm);
+            });
+
+            // Apply sorting if active
+            if (offersSortColumn) {
+                filteredOffers.sort((a, b) => {
+                    let aVal, bVal;
+                    switch(offersSortColumn) {
+                        case 'offerId': aVal = a.fields['Bid ID'] || ''; bVal = b.fields['Bid ID'] || ''; break;
+                        case 'unit': aVal = (a.fields['Name (from Unit) (from Availability Period)'] && a.fields['Name (from Unit) (from Availability Period)'][0]) || ''; bVal = (b.fields['Name (from Unit) (from Availability Period)'] && b.fields['Name (from Unit) (from Availability Period)'][0]) || ''; break;
+                        case 'tenant': aVal = (a.fields['Email (from Tenant (Linked))'] && a.fields['Email (from Tenant (Linked))'][0]) || ''; bVal = (b.fields['Email (from Tenant (Linked))'] && b.fields['Email (from Tenant (Linked))'][0]) || ''; break;
+                        case 'bidAmount': aVal = a.fields['Bid Amount'] || 0; bVal = b.fields['Bid Amount'] || 0; break;
+                        case 'status': aVal = a.fields['Bid Status'] || ''; bVal = b.fields['Bid Status'] || ''; break;
+                        case 'submissionDate': aVal = a.fields['Submission Date'] ? new Date(a.fields['Submission Date']).getTime() : 0; bVal = b.fields['Submission Date'] ? new Date(b.fields['Submission Date']).getTime() : 0; break;
+                        case 'moveInDate': aVal = a.fields['Move-in Date'] ? new Date(a.fields['Move-in Date']).getTime() : 0; bVal = b.fields['Move-in Date'] ? new Date(b.fields['Move-in Date']).getTime() : 0; break;
+                        case 'leaseTerm': aVal = a.fields['Lease Term (Months)'] || 0; bVal = b.fields['Lease Term (Months)'] || 0; break;
+                        default: return 0;
+                    }
+                    if (typeof aVal === 'number' && typeof bVal === 'number') {
+                        return offersSortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                    } else {
+                        const comparison = String(aVal).localeCompare(String(bVal));
+                        return offersSortDirection === 'asc' ? comparison : -comparison;
+                    }
+                });
+            }
+
+            // Prepare data for CSV
+            const csvData = filteredOffers.map(offer => {
+                const fields = offer.fields;
+                const unitName = fields['Name (from Unit) (from Availability Period)'];
+                const tenantEmail = fields['Email (from Tenant (Linked))'];
+                const submissionDate = fields['Submission Date'] ? new Date(fields['Submission Date']).toLocaleDateString() : '';
+                const moveInDate = fields['Move-in Date'] ? new Date(fields['Move-in Date']).toLocaleDateString() : '';
+
+                return {
+                    'Offer ID': fields['Bid ID'] || '',
+                    'Unit': unitName && unitName[0] ? unitName[0] : '',
+                    'Tenant Email': tenantEmail && tenantEmail[0] ? tenantEmail[0] : '',
+                    'Bid Amount': fields['Bid Amount'] || 0,
+                    'Status': fields['Bid Status'] || '',
+                    'Submission Date': submissionDate,
+                    'Move-in Date': moveInDate,
+                    'Lease Term (Months)': fields['Lease Term (Months)'] || '',
+                    'Admin Notes': fields['Admin Decision Notes'] || ''
+                };
+            });
+
+            const headers = ['Offer ID', 'Unit', 'Tenant Email', 'Bid Amount', 'Status', 'Submission Date', 'Move-in Date', 'Lease Term (Months)', 'Admin Notes'];
+            const csv = convertToCSV(csvData, headers);
+            const timestamp = new Date().toISOString().slice(0, 10);
+            downloadCSV(csv, `offers-${timestamp}.csv`);
         }
 
         function displayOffersManagement() {
@@ -1480,6 +1668,70 @@
         function filterTenants(searchTerm) {
             tenantsSearchTerm = searchTerm.toLowerCase();
             displayTenantsManagement();
+        }
+
+        function exportTenantsToCSV() {
+            // Get filtered tenants (same logic as displayTenantsManagement)
+            let filteredTenants = allTenants.filter(tenant => {
+                if (!tenantsSearchTerm) return true;
+                const fields = tenant.fields;
+                const searchableText = [
+                    fields.Name,
+                    fields.Email,
+                    fields.Phone,
+                    fields['Current Unit'],
+                    fields.Status
+                ].join(' ').toLowerCase();
+                return searchableText.includes(tenantsSearchTerm);
+            });
+
+            // Apply sorting if active
+            if (tenantsSortColumn) {
+                filteredTenants.sort((a, b) => {
+                    let aVal, bVal;
+                    switch(tenantsSortColumn) {
+                        case 'name': aVal = a.fields.Name || ''; bVal = b.fields.Name || ''; break;
+                        case 'email': aVal = a.fields.Email || ''; bVal = b.fields.Email || ''; break;
+                        case 'phone': aVal = a.fields.Phone || ''; bVal = b.fields.Phone || ''; break;
+                        case 'currentUnit': aVal = (a.fields['Current Unit'] && a.fields['Current Unit'][0]) || ''; bVal = (b.fields['Current Unit'] && b.fields['Current Unit'][0]) || ''; break;
+                        case 'moveInDate': aVal = a.fields['Move-in Date'] ? new Date(a.fields['Move-in Date']).getTime() : 0; bVal = b.fields['Move-in Date'] ? new Date(b.fields['Move-in Date']).getTime() : 0; break;
+                        case 'leaseEndDate': aVal = a.fields['Lease End Date'] ? new Date(a.fields['Lease End Date']).getTime() : 0; bVal = b.fields['Lease End Date'] ? new Date(b.fields['Lease End Date']).getTime() : 0; break;
+                        case 'status': aVal = a.fields.Status || ''; bVal = b.fields.Status || ''; break;
+                        default: return 0;
+                    }
+                    if (typeof aVal === 'number' && typeof bVal === 'number') {
+                        return tenantsSortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                    } else {
+                        const comparison = String(aVal).localeCompare(String(bVal));
+                        return tenantsSortDirection === 'asc' ? comparison : -comparison;
+                    }
+                });
+            }
+
+            // Prepare data for CSV
+            const csvData = filteredTenants.map(tenant => {
+                const fields = tenant.fields;
+                const currentUnit = fields['Current Unit'] && fields['Current Unit'][0] ? fields['Current Unit'][0] : '';
+                const moveInDate = fields['Move-in Date'] ? new Date(fields['Move-in Date']).toLocaleDateString() : '';
+                const leaseEndDate = fields['Lease End Date'] ? new Date(fields['Lease End Date']).toLocaleDateString() : '';
+
+                return {
+                    'Name': fields.Name || '',
+                    'Email': fields.Email || '',
+                    'Phone': fields.Phone || '',
+                    'Current Unit': currentUnit,
+                    'Move-in Date': moveInDate,
+                    'Lease End Date': leaseEndDate,
+                    'Status': fields.Status || '',
+                    'Emergency Contact': fields['Emergency Contact'] || '',
+                    'Notes': fields.Notes || ''
+                };
+            });
+
+            const headers = ['Name', 'Email', 'Phone', 'Current Unit', 'Move-in Date', 'Lease End Date', 'Status', 'Emergency Contact', 'Notes'];
+            const csv = convertToCSV(csvData, headers);
+            const timestamp = new Date().toISOString().slice(0, 10);
+            downloadCSV(csv, `tenants-${timestamp}.csv`);
         }
 
         function displayTenantsManagement() {
