@@ -454,6 +454,12 @@
 
                 currentTenant = data.records[0];
 
+                // Verify password
+                const storedPassword = currentTenant.fields.Password;
+                if (!storedPassword || storedPassword !== password) {
+                    throw new Error('Invalid password');
+                }
+
                 // Store tenant info
                 localStorage.setItem(TENANT_KEY, JSON.stringify(currentTenant));
 
