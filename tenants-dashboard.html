@@ -406,6 +406,38 @@
                     </form>
                 </div>
 
+                <div id="editMaintenanceForm" style="display: none;" class="card" style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px;">Edit Maintenance Ticket</h3>
+                    <form id="maintenanceEditForm" onsubmit="updateMaintenanceTicket(event)">
+                        <input type="hidden" id="editTicketId">
+                        <div class="form-group">
+                            <label for="editMaintenanceIssue">Issue Description *</label>
+                            <input type="text" id="editMaintenanceIssue" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editMaintenanceDetails">Detailed Description *</label>
+                            <textarea id="editMaintenanceDetails" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editMaintenancePriority">Priority *</label>
+                            <select id="editMaintenancePriority" required>
+                                <option value="Low">Low - Not urgent</option>
+                                <option value="Medium">Medium - Should be addressed soon</option>
+                                <option value="High">High - Needs attention</option>
+                                <option value="Urgent">Urgent - Immediate attention required</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editMaintenanceLocation">Location in Unit</label>
+                            <input type="text" id="editMaintenanceLocation">
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit">Save Changes</button>
+                            <button type="button" onclick="cancelEditTicket()" class="btn-secondary">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
                 <div class="card">
                     <div id="maintenanceRequestsList">
                         <!-- Maintenance requests will be populated here -->
@@ -414,11 +446,36 @@
             </div>
 
             <div id="profileSection" class="profile-section">
-                <h2 style="margin-bottom: 20px;">👤 My Profile</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>👤 My Profile</h2>
+                    <button onclick="showEditProfileForm()" id="editProfileBtn" class="btn-primary">✏️ Edit Profile</button>
+                </div>
                 <div class="card">
                     <div id="profileInfo">
                         <!-- Profile information will be populated here -->
                     </div>
+                </div>
+
+                <div id="editProfileForm" style="display: none;" class="card" style="margin-top: 20px;">
+                    <h3 style="margin-bottom: 15px;">Edit Profile Information</h3>
+                    <form id="profileUpdateForm" onsubmit="updateProfile(event)">
+                        <div class="form-group">
+                            <label for="profileName">Name *</label>
+                            <input type="text" id="profileName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profileEmail">Email *</label>
+                            <input type="email" id="profileEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profilePhone">Phone</label>
+                            <input type="tel" id="profilePhone">
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit">Save Changes</button>
+                            <button type="button" onclick="cancelEditProfile()" class="btn-secondary">Cancel</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -847,6 +904,63 @@
             `;
         }
 
+        function showEditProfileForm() {
+            const fields = currentTenant.fields;
+            document.getElementById('profileName').value = fields.Name || '';
+            document.getElementById('profileEmail').value = fields.Email || '';
+            document.getElementById('profilePhone').value = fields.Phone || '';
+
+            document.getElementById('editProfileForm').style.display = 'block';
+            document.getElementById('editProfileBtn').style.display = 'none';
+            document.getElementById('profileName').focus();
+        }
+
+        function cancelEditProfile() {
+            document.getElementById('editProfileForm').style.display = 'none';
+            document.getElementById('editProfileBtn').style.display = 'block';
+            document.getElementById('profileUpdateForm').reset();
+        }
+
+        async function updateProfile(event) {
+            event.preventDefault();
+
+            const updatedFields = {
+                'Name': document.getElementById('profileName').value,
+                'Email': document.getElementById('profileEmail').value,
+                'Phone': document.getElementById('profilePhone').value
+            };
+
+            try {
+                const response = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Tenants/${currentTenant.id}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fields: updatedFields })
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to update profile');
+                }
+
+                const updatedTenant = await response.json();
+                currentTenant = updatedTenant;
+                localStorage.setItem(TENANT_KEY, JSON.stringify(currentTenant));
+
+                alert('✅ Profile updated successfully!');
+                cancelEditProfile();
+                displayProfile();
+
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                alert('❌ Failed to update profile: ' + error.message);
+            }
+        }
+
         // ========== MAINTENANCE REQUEST FUNCTIONS ==========
 
         function showMaintenance() {
@@ -895,6 +1009,7 @@
                             <th>Submitted</th>
                             <th>Location</th>
                             <th>Details</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -902,6 +1017,7 @@
                             const fields = request.fields;
                             const priorityClass = (fields.Priority || '').toLowerCase();
                             const statusClass = (fields.Status || '').toLowerCase().replace(' ', '-');
+                            const canEdit = fields.Status === 'Pending';
                             return `
                                 <tr>
                                     <td><strong>${fields.Issue || 'N/A'}</strong></td>
@@ -910,6 +1026,12 @@
                                     <td>${fields['Submitted Date'] || 'N/A'}</td>
                                     <td>${fields.Location || '-'}</td>
                                     <td>${fields.Details || '-'}</td>
+                                    <td>
+                                        ${canEdit ? `
+                                            <button onclick="editMaintenanceTicket('${request.id}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.85rem; margin-right: 5px;">✏️ Edit</button>
+                                            <button onclick="deleteMaintenanceTicket('${request.id}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.85rem; background: #dc3545;">🗑️ Delete</button>
+                                        ` : '<span style="color: #999;">-</span>'}
+                                    </td>
                                 </tr>
                             `;
                         }).join('')}
@@ -977,6 +1099,105 @@
             } catch (error) {
                 console.error('Error submitting maintenance ticket:', error);
                 alert('❌ Failed to submit maintenance ticket: ' + error.message);
+            }
+        }
+
+        function editMaintenanceTicket(ticketId) {
+            const ticket = allMaintenanceRequests.find(r => r.id === ticketId);
+            if (!ticket) {
+                alert('❌ Ticket not found');
+                return;
+            }
+
+            const fields = ticket.fields;
+            document.getElementById('editTicketId').value = ticketId;
+            document.getElementById('editMaintenanceIssue').value = fields.Issue || '';
+            document.getElementById('editMaintenanceDetails').value = fields.Details || '';
+            document.getElementById('editMaintenancePriority').value = fields.Priority || 'Medium';
+            document.getElementById('editMaintenanceLocation').value = fields.Location || '';
+
+            document.getElementById('newMaintenanceForm').style.display = 'none';
+            document.getElementById('editMaintenanceForm').style.display = 'block';
+            document.getElementById('editMaintenanceIssue').focus();
+        }
+
+        function cancelEditTicket() {
+            document.getElementById('editMaintenanceForm').style.display = 'none';
+            document.getElementById('maintenanceEditForm').reset();
+        }
+
+        async function updateMaintenanceTicket(event) {
+            event.preventDefault();
+
+            const ticketId = document.getElementById('editTicketId').value;
+            const updatedFields = {
+                'Issue': document.getElementById('editMaintenanceIssue').value,
+                'Details': document.getElementById('editMaintenanceDetails').value,
+                'Priority': document.getElementById('editMaintenancePriority').value,
+                'Location': document.getElementById('editMaintenanceLocation').value
+            };
+
+            try {
+                const response = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Maintenance%20Tickets/${ticketId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fields: updatedFields })
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to update maintenance ticket');
+                }
+
+                const updatedTicket = await response.json();
+                const index = allMaintenanceRequests.findIndex(r => r.id === ticketId);
+                if (index !== -1) {
+                    allMaintenanceRequests[index] = updatedTicket;
+                }
+
+                alert('✅ Maintenance ticket updated successfully!');
+                cancelEditTicket();
+                displayMaintenanceRequests();
+
+            } catch (error) {
+                console.error('Error updating maintenance ticket:', error);
+                alert('❌ Failed to update maintenance ticket: ' + error.message);
+            }
+        }
+
+        async function deleteMaintenanceTicket(ticketId) {
+            if (!confirm('Are you sure you want to delete this maintenance ticket? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Maintenance%20Tickets/${ticketId}`,
+                    {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete maintenance ticket');
+                }
+
+                allMaintenanceRequests = allMaintenanceRequests.filter(r => r.id !== ticketId);
+
+                alert('✅ Maintenance ticket deleted successfully!');
+                displayMaintenanceRequests();
+
+            } catch (error) {
+                console.error('Error deleting maintenance ticket:', error);
+                alert('❌ Failed to delete maintenance ticket: ' + error.message);
             }
         }
 
