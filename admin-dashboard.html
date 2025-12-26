@@ -1216,11 +1216,18 @@
             event.preventDefault();
 
             const unitId = document.getElementById('editUnitId').value;
-            const updatedFields = {
-                'Unit ID': document.getElementById('editUnitIdField').value,
-                'Unit Type': document.getElementById('editUnitType').value,
-                'Status': document.getElementById('editUnitStatus').value
-            };
+            const updatedFields = {};
+
+            // Required text field
+            const unitIdValue = document.getElementById('editUnitIdField').value;
+            if (unitIdValue) updatedFields['Unit ID'] = unitIdValue;
+
+            // Select fields - only add if they have a value
+            const unitType = document.getElementById('editUnitType').value;
+            if (unitType) updatedFields['Unit Type'] = unitType;
+
+            const status = document.getElementById('editUnitStatus').value;
+            if (status) updatedFields['Status'] = status;
 
             // Add optional numeric fields only if they have values
             const bedrooms = document.getElementById('editUnitBedrooms').value;
@@ -1295,12 +1302,22 @@
             event.preventDefault();
 
             const offerId = document.getElementById('editOfferId').value;
-            const updatedFields = {
-                'Offer Amount': parseFloat(document.getElementById('editOfferAmount').value),
-                'Status': document.getElementById('editOfferStatus').value,
-                'Offer Date': document.getElementById('editOfferDate').value,
-                'Notes': document.getElementById('editOfferNotes').value
-            };
+            const updatedFields = {};
+
+            // Required numeric field
+            const offerAmount = document.getElementById('editOfferAmount').value;
+            if (offerAmount) updatedFields['Offer Amount'] = parseFloat(offerAmount);
+
+            // Select field - only add if it has a value
+            const status = document.getElementById('editOfferStatus').value;
+            if (status) updatedFields['Status'] = status;
+
+            // Optional fields
+            const offerDate = document.getElementById('editOfferDate').value;
+            if (offerDate) updatedFields['Offer Date'] = offerDate;
+
+            const notes = document.getElementById('editOfferNotes').value;
+            if (notes) updatedFields['Notes'] = notes;
 
             try {
                 const response = await fetch(
@@ -1480,13 +1497,25 @@
             event.preventDefault();
 
             const ticketId = document.getElementById('editMaintenanceId').value;
-            const updatedFields = {
-                'Title': document.getElementById('editMaintenanceTitle').value,
-                'Description': document.getElementById('editMaintenanceDescription').value,
-                'Status': document.getElementById('editMaintenanceStatus').value,
-                'Priority': document.getElementById('editMaintenancePriority').value,
-                'Submitted Date': document.getElementById('editMaintenanceDate').value
-            };
+            const updatedFields = {};
+
+            // Required text fields
+            const title = document.getElementById('editMaintenanceTitle').value;
+            if (title) updatedFields['Title'] = title;
+
+            const description = document.getElementById('editMaintenanceDescription').value;
+            if (description) updatedFields['Description'] = description;
+
+            // Select fields - only add if they have values
+            const status = document.getElementById('editMaintenanceStatus').value;
+            if (status) updatedFields['Status'] = status;
+
+            const priority = document.getElementById('editMaintenancePriority').value;
+            if (priority) updatedFields['Priority'] = priority;
+
+            // Optional date field
+            const submittedDate = document.getElementById('editMaintenanceDate').value;
+            if (submittedDate) updatedFields['Submitted Date'] = submittedDate;
 
             try {
                 const response = await fetch(
