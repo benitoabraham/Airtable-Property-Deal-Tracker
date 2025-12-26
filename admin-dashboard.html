@@ -197,6 +197,71 @@
         .status-rejected { background: #f8d7da; color: #721c24; }
         .status-active { background: #d4edda; color: #155724; }
         .status-inactive { background: #f8d7da; color: #721c24; }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow-y: auto;
+        }
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: white;
+            margin: 20px auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+        }
+        .close-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .close-btn:hover {
+            background: #c82333;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -352,6 +417,227 @@
                 <div class="card">
                     <div id="maintenanceList"></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Edit Unit Modal -->
+        <div id="editUnitModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>✏️ Edit Unit</h2>
+                    <button class="close-btn" onclick="closeEditUnitModal()">✕ Close</button>
+                </div>
+                <form id="editUnitForm" onsubmit="updateUnit(event)">
+                    <input type="hidden" id="editUnitId">
+                    <div class="form-group">
+                        <label for="editUnitName">Unit Name *</label>
+                        <input type="text" id="editUnitName" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editUnitType">Type</label>
+                            <select id="editUnitType">
+                                <option value="Apartment">Apartment</option>
+                                <option value="House">House</option>
+                                <option value="Condo">Condo</option>
+                                <option value="Studio">Studio</option>
+                                <option value="Commercial">Commercial</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editUnitStatus">Status</label>
+                            <select id="editUnitStatus">
+                                <option value="Available">Available</option>
+                                <option value="Occupied">Occupied</option>
+                                <option value="Maintenance">Maintenance</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editUnitBedrooms">Bedrooms</label>
+                            <input type="number" id="editUnitBedrooms" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="editUnitBathrooms">Bathrooms</label>
+                            <input type="number" id="editUnitBathrooms" min="0" step="0.5">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editUnitSize">Size (sqft)</label>
+                            <input type="number" id="editUnitSize" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="editUnitRent">Base Rent ($)</label>
+                            <input type="number" id="editUnitRent" min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editUnitAddress">Address</label>
+                        <textarea id="editUnitAddress" rows="2"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                        <button type="button" class="btn-secondary" onclick="closeEditUnitModal()">Cancel</button>
+                        <button type="submit" class="btn-success">💾 Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Offer Modal -->
+        <div id="editOfferModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>✏️ Edit Offer</h2>
+                    <button class="close-btn" onclick="closeEditOfferModal()">✕ Close</button>
+                </div>
+                <form id="editOfferForm" onsubmit="updateOffer(event)">
+                    <input type="hidden" id="editOfferId">
+                    <div class="form-group">
+                        <label for="editOfferAmount">Offer Amount ($) *</label>
+                        <input type="number" id="editOfferAmount" required min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="editOfferStatus">Status *</label>
+                        <select id="editOfferStatus" required>
+                            <option value="Pending">Pending</option>
+                            <option value="Accepted">Accepted</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editOfferDate">Offer Date</label>
+                        <input type="date" id="editOfferDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="editOfferNotes">Notes</label>
+                        <textarea id="editOfferNotes" rows="3"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                        <button type="button" class="btn-secondary" onclick="closeEditOfferModal()">Cancel</button>
+                        <button type="submit" class="btn-success">💾 Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Tenant Modal -->
+        <div id="editTenantModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>✏️ Edit Tenant</h2>
+                    <button class="close-btn" onclick="closeEditTenantModal()">✕ Close</button>
+                </div>
+                <form id="editTenantForm" onsubmit="updateTenant(event)">
+                    <input type="hidden" id="editTenantId">
+                    <div class="form-group">
+                        <label for="editTenantName">Name *</label>
+                        <input type="text" id="editTenantName" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editTenantEmail">Email *</label>
+                            <input type="email" id="editTenantEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editTenantPhone">Phone</label>
+                            <input type="tel" id="editTenantPhone">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTenantPassword">Password (leave blank to keep unchanged)</label>
+                        <input type="text" id="editTenantPassword" placeholder="Enter new password or leave blank">
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                        <button type="button" class="btn-secondary" onclick="closeEditTenantModal()">Cancel</button>
+                        <button type="submit" class="btn-success">💾 Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Owner Modal -->
+        <div id="editOwnerModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>✏️ Edit Owner</h2>
+                    <button class="close-btn" onclick="closeEditOwnerModal()">✕ Close</button>
+                </div>
+                <form id="editOwnerForm" onsubmit="updateOwner(event)">
+                    <input type="hidden" id="editOwnerId">
+                    <div class="form-group">
+                        <label for="editOwnerName">Name *</label>
+                        <input type="text" id="editOwnerName" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editOwnerEmail">Email *</label>
+                            <input type="email" id="editOwnerEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editOwnerPhone">Phone</label>
+                            <input type="tel" id="editOwnerPhone">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editOwnerPassword">Password (leave blank to keep unchanged)</label>
+                        <input type="text" id="editOwnerPassword" placeholder="Enter new password or leave blank">
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                        <button type="button" class="btn-secondary" onclick="closeEditOwnerModal()">Cancel</button>
+                        <button type="submit" class="btn-success">💾 Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Maintenance Ticket Modal -->
+        <div id="editMaintenanceModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>✏️ Edit Maintenance Ticket</h2>
+                    <button class="close-btn" onclick="closeEditMaintenanceModal()">✕ Close</button>
+                </div>
+                <form id="editMaintenanceForm" onsubmit="updateMaintenance(event)">
+                    <input type="hidden" id="editMaintenanceId">
+                    <div class="form-group">
+                        <label for="editMaintenanceTitle">Title *</label>
+                        <input type="text" id="editMaintenanceTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editMaintenanceDescription">Description *</label>
+                        <textarea id="editMaintenanceDescription" rows="4" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editMaintenanceStatus">Status *</label>
+                            <select id="editMaintenanceStatus" required>
+                                <option value="Pending">Pending</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editMaintenancePriority">Priority</label>
+                            <select id="editMaintenancePriority">
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                                <option value="Emergency">Emergency</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editMaintenanceDate">Submitted Date</label>
+                        <input type="date" id="editMaintenanceDate">
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                        <button type="button" class="btn-secondary" onclick="closeEditMaintenanceModal()">Cancel</button>
+                        <button type="submit" class="btn-success">💾 Save Changes</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -686,7 +972,7 @@
                                     <td><span class="status-badge ${fields.Status === 'Occupied' ? 'status-accepted' : 'status-pending'}">${fields.Status || 'N/A'}</span></td>
                                     <td>$${(fields['Base Rent'] || 0).toLocaleString()}</td>
                                     <td>
-                                        <button class="btn-small" onclick="alert('Edit unit: ${unit.id}')">✏️ Edit</button>
+                                        <button class="btn-small" onclick="editUnit('${unit.id}')">✏️ Edit</button>
                                         <button class="btn-small btn-danger" onclick="deleteRecord('Units', '${unit.id}', 'unit')">🗑️ Delete</button>
                                     </td>
                                 </tr>
@@ -725,7 +1011,7 @@
                                     <td>$${(fields['Bid Amount'] || 0).toLocaleString()}</td>
                                     <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
                                     <td>
-                                        <button class="btn-small" onclick="alert('Edit offer: ${offer.id}')">✏️ Edit</button>
+                                        <button class="btn-small" onclick="editOffer('${offer.id}')">✏️ Edit</button>
                                         <button class="btn-small btn-danger" onclick="deleteRecord('Offers', '${offer.id}', 'offer')">🗑️ Delete</button>
                                     </td>
                                 </tr>
@@ -763,7 +1049,7 @@
                                     <td><span class="status-badge status-${fields.Status === 'Active' ? 'active' : 'inactive'}">${fields.Status || 'N/A'}</span></td>
                                     <td>${fields['Current Unit']?.[0] || '-'}</td>
                                     <td>
-                                        <button class="btn-small" onclick="alert('Edit tenant: ${tenant.id}')">✏️ Edit</button>
+                                        <button class="btn-small" onclick="editTenant('${tenant.id}')">✏️ Edit</button>
                                         <button class="btn-small btn-danger" onclick="deleteRecord('Tenants', '${tenant.id}', 'tenant')">🗑️ Delete</button>
                                     </td>
                                 </tr>
@@ -797,7 +1083,7 @@
                                     <td>${fields.Email || 'N/A'}</td>
                                     <td>${fields.Phone || 'N/A'}</td>
                                     <td>
-                                        <button class="btn-small" onclick="alert('Edit owner: ${owner.id}')">✏️ Edit</button>
+                                        <button class="btn-small" onclick="editOwner('${owner.id}')">✏️ Edit</button>
                                         <button class="btn-small btn-danger" onclick="deleteRecord('Owners', '${owner.id}', 'owner')">🗑️ Delete</button>
                                     </td>
                                 </tr>
@@ -837,7 +1123,7 @@
                                     <td><span class="status-badge status-${fields.Status === 'Completed' ? 'active' : 'pending'}">${fields.Status || 'N/A'}</span></td>
                                     <td>${fields['Submitted Date'] || 'N/A'}</td>
                                     <td>
-                                        <button class="btn-small" onclick="alert('Edit ticket: ${ticket.id}')">✏️ Edit</button>
+                                        <button class="btn-small" onclick="editMaintenance('${ticket.id}')">✏️ Edit</button>
                                         <button class="btn-small btn-danger" onclick="deleteRecord('Maintenance Tickets', '${ticket.id}', 'ticket')">🗑️ Delete</button>
                                     </td>
                                 </tr>
@@ -879,6 +1165,316 @@
                 } else {
                     const error = await response.json();
                     alert('❌ Error deleting record: ' + (error.error?.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        // Edit Unit Functions
+        function editUnit(unitId) {
+            const unit = allUnits.find(u => u.id === unitId);
+            if (!unit) return;
+
+            const fields = unit.fields;
+            document.getElementById('editUnitId').value = unitId;
+            document.getElementById('editUnitName').value = fields.Name || fields['Unit ID'] || '';
+            document.getElementById('editUnitType').value = fields.Type || 'Apartment';
+            document.getElementById('editUnitStatus').value = fields.Status || 'Available';
+            document.getElementById('editUnitBedrooms').value = fields.Bedrooms || '';
+            document.getElementById('editUnitBathrooms').value = fields.Bathrooms || '';
+            document.getElementById('editUnitSize').value = fields['Size (sqft)'] || '';
+            document.getElementById('editUnitRent').value = fields['Base Rent'] || '';
+            document.getElementById('editUnitAddress').value = fields.Address || '';
+
+            document.getElementById('editUnitModal').classList.add('active');
+        }
+
+        function closeEditUnitModal() {
+            document.getElementById('editUnitModal').classList.remove('active');
+            document.getElementById('editUnitForm').reset();
+        }
+
+        async function updateUnit(event) {
+            event.preventDefault();
+
+            const unitId = document.getElementById('editUnitId').value;
+            const updatedFields = {
+                'Name': document.getElementById('editUnitName').value,
+                'Type': document.getElementById('editUnitType').value,
+                'Status': document.getElementById('editUnitStatus').value,
+                'Bedrooms': parseInt(document.getElementById('editUnitBedrooms').value) || 0,
+                'Bathrooms': parseFloat(document.getElementById('editUnitBathrooms').value) || 0,
+                'Size (sqft)': parseInt(document.getElementById('editUnitSize').value) || 0,
+                'Base Rent': parseFloat(document.getElementById('editUnitRent').value) || 0,
+                'Address': document.getElementById('editUnitAddress').value
+            };
+
+            try {
+                const response = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Units/${unitId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fields: updatedFields })
+                    }
+                );
+
+                if (response.ok) {
+                    alert('✅ Unit updated successfully!');
+                    closeEditUnitModal();
+                    await loadDashboard();
+                    showUnits();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Error updating unit: ' + (error.error?.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        // Edit Offer Functions
+        function editOffer(offerId) {
+            const offer = allOffers.find(o => o.id === offerId);
+            if (!offer) return;
+
+            const fields = offer.fields;
+            document.getElementById('editOfferId').value = offerId;
+            document.getElementById('editOfferAmount').value = fields['Offer Amount'] || '';
+            document.getElementById('editOfferStatus').value = fields.Status || 'Pending';
+            document.getElementById('editOfferDate').value = fields['Offer Date'] || '';
+            document.getElementById('editOfferNotes').value = fields.Notes || '';
+
+            document.getElementById('editOfferModal').classList.add('active');
+        }
+
+        function closeEditOfferModal() {
+            document.getElementById('editOfferModal').classList.remove('active');
+            document.getElementById('editOfferForm').reset();
+        }
+
+        async function updateOffer(event) {
+            event.preventDefault();
+
+            const offerId = document.getElementById('editOfferId').value;
+            const updatedFields = {
+                'Offer Amount': parseFloat(document.getElementById('editOfferAmount').value),
+                'Status': document.getElementById('editOfferStatus').value,
+                'Offer Date': document.getElementById('editOfferDate').value,
+                'Notes': document.getElementById('editOfferNotes').value
+            };
+
+            try {
+                const response = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Offers/${offerId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fields: updatedFields })
+                    }
+                );
+
+                if (response.ok) {
+                    alert('✅ Offer updated successfully!');
+                    closeEditOfferModal();
+                    await loadDashboard();
+                    showOffers();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Error updating offer: ' + (error.error?.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        // Edit Tenant Functions
+        function editTenant(tenantId) {
+            const tenant = allTenants.find(t => t.id === tenantId);
+            if (!tenant) return;
+
+            const fields = tenant.fields;
+            document.getElementById('editTenantId').value = tenantId;
+            document.getElementById('editTenantName').value = fields.Name || '';
+            document.getElementById('editTenantEmail').value = fields.Email || '';
+            document.getElementById('editTenantPhone').value = fields.Phone || '';
+            document.getElementById('editTenantPassword').value = ''; // Don't populate password
+
+            document.getElementById('editTenantModal').classList.add('active');
+        }
+
+        function closeEditTenantModal() {
+            document.getElementById('editTenantModal').classList.remove('active');
+            document.getElementById('editTenantForm').reset();
+        }
+
+        async function updateTenant(event) {
+            event.preventDefault();
+
+            const tenantId = document.getElementById('editTenantId').value;
+            const updatedFields = {
+                'Name': document.getElementById('editTenantName').value,
+                'Email': document.getElementById('editTenantEmail').value,
+                'Phone': document.getElementById('editTenantPhone').value
+            };
+
+            // Only update password if provided
+            const newPassword = document.getElementById('editTenantPassword').value;
+            if (newPassword) {
+                updatedFields['Password'] = newPassword;
+            }
+
+            try {
+                const response = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Tenants/${tenantId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fields: updatedFields })
+                    }
+                );
+
+                if (response.ok) {
+                    alert('✅ Tenant updated successfully!');
+                    closeEditTenantModal();
+                    await loadDashboard();
+                    showTenants();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Error updating tenant: ' + (error.error?.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        // Edit Owner Functions
+        function editOwner(ownerId) {
+            const owner = allOwners.find(o => o.id === ownerId);
+            if (!owner) return;
+
+            const fields = owner.fields;
+            document.getElementById('editOwnerId').value = ownerId;
+            document.getElementById('editOwnerName').value = fields.Name || '';
+            document.getElementById('editOwnerEmail').value = fields.Email || '';
+            document.getElementById('editOwnerPhone').value = fields.Phone || '';
+            document.getElementById('editOwnerPassword').value = ''; // Don't populate password
+
+            document.getElementById('editOwnerModal').classList.add('active');
+        }
+
+        function closeEditOwnerModal() {
+            document.getElementById('editOwnerModal').classList.remove('active');
+            document.getElementById('editOwnerForm').reset();
+        }
+
+        async function updateOwner(event) {
+            event.preventDefault();
+
+            const ownerId = document.getElementById('editOwnerId').value;
+            const updatedFields = {
+                'Name': document.getElementById('editOwnerName').value,
+                'Email': document.getElementById('editOwnerEmail').value,
+                'Phone': document.getElementById('editOwnerPhone').value
+            };
+
+            // Only update password if provided
+            const newPassword = document.getElementById('editOwnerPassword').value;
+            if (newPassword) {
+                updatedFields['Password'] = newPassword;
+            }
+
+            try {
+                const response = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Owners/${ownerId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fields: updatedFields })
+                    }
+                );
+
+                if (response.ok) {
+                    alert('✅ Owner updated successfully!');
+                    closeEditOwnerModal();
+                    await loadDashboard();
+                    showOwners();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Error updating owner: ' + (error.error?.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        // Edit Maintenance Functions
+        function editMaintenance(ticketId) {
+            const ticket = allMaintenance.find(t => t.id === ticketId);
+            if (!ticket) return;
+
+            const fields = ticket.fields;
+            document.getElementById('editMaintenanceId').value = ticketId;
+            document.getElementById('editMaintenanceTitle').value = fields.Title || '';
+            document.getElementById('editMaintenanceDescription').value = fields.Description || '';
+            document.getElementById('editMaintenanceStatus').value = fields.Status || 'Pending';
+            document.getElementById('editMaintenancePriority').value = fields.Priority || 'Medium';
+            document.getElementById('editMaintenanceDate').value = fields['Submitted Date'] || '';
+
+            document.getElementById('editMaintenanceModal').classList.add('active');
+        }
+
+        function closeEditMaintenanceModal() {
+            document.getElementById('editMaintenanceModal').classList.remove('active');
+            document.getElementById('editMaintenanceForm').reset();
+        }
+
+        async function updateMaintenance(event) {
+            event.preventDefault();
+
+            const ticketId = document.getElementById('editMaintenanceId').value;
+            const updatedFields = {
+                'Title': document.getElementById('editMaintenanceTitle').value,
+                'Description': document.getElementById('editMaintenanceDescription').value,
+                'Status': document.getElementById('editMaintenanceStatus').value,
+                'Priority': document.getElementById('editMaintenancePriority').value,
+                'Submitted Date': document.getElementById('editMaintenanceDate').value
+            };
+
+            try {
+                const response = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Maintenance%20Tickets/${ticketId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fields: updatedFields })
+                    }
+                );
+
+                if (response.ok) {
+                    alert('✅ Maintenance ticket updated successfully!');
+                    closeEditMaintenanceModal();
+                    await loadDashboard();
+                    showMaintenance();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Error updating ticket: ' + (error.error?.message || 'Unknown error'));
                 }
             } catch (error) {
                 alert('❌ Error: ' + error.message);
