@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tenant Portal - Property Management</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -273,6 +274,7 @@
                 </div>
                 <div id="userInfo" style="display: none;">
                     <span id="userName"></span>
+                    <button onclick="showNotificationSettings()" class="btn-secondary" style="margin-left: 15px;">🔔 Notifications</button>
                     <button onclick="logout()" class="btn-secondary" style="margin-left: 10px;">Logout</button>
                 </div>
             </div>
@@ -371,6 +373,54 @@
                     </div>
                 </div>
             </div>
+
+            <div id="notificationSettingsSection" class="profile-section">
+                <h2 style="margin-bottom: 20px;">🔔 Notification Settings</h2>
+                <div class="card">
+                    <div class="alert alert-info" style="margin-bottom: 20px;">
+                        <strong>Get email alerts when:</strong>
+                        <ul style="margin-top: 10px; margin-left: 20px;">
+                            <li>Your application status changes</li>
+                            <li>Your lease is expiring soon</li>
+                            <li>Important property updates are posted</li>
+                        </ul>
+                    </div>
+                    <form id="notificationForm" onsubmit="saveNotificationSettings(event)">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="enableNotifications" style="width: auto; margin-right: 10px;">
+                                Enable Email Notifications
+                            </label>
+                        </div>
+                        <div id="notificationFields" style="display: none;">
+                            <div class="form-group">
+                                <label for="notificationEmail">Email Address</label>
+                                <input type="email" id="notificationEmail" placeholder="your-email@example.com">
+                            </div>
+                            <div class="alert alert-warning" style="margin-bottom: 20px;">
+                                <strong>Setup EmailJS (Free):</strong><br>
+                                1. Create a free account at <a href="https://www.emailjs.com/" target="_blank">emailjs.com</a><br>
+                                2. Create an email service and template<br>
+                                3. Copy your credentials below
+                            </div>
+                            <div class="form-group">
+                                <label for="emailjsServiceId">EmailJS Service ID</label>
+                                <input type="text" id="emailjsServiceId" placeholder="service_xxxxxxx">
+                            </div>
+                            <div class="form-group">
+                                <label for="emailjsTemplateId">EmailJS Template ID</label>
+                                <input type="text" id="emailjsTemplateId" placeholder="template_xxxxxxx">
+                            </div>
+                            <div class="form-group">
+                                <label for="emailjsPublicKey">EmailJS Public Key</label>
+                                <input type="text" id="emailjsPublicKey" placeholder="Your public key">
+                            </div>
+                        </div>
+                        <button type="submit">Save Settings</button>
+                        <button type="button" onclick="showProfile()" class="btn-secondary" style="margin-left: 10px;">Cancel</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -378,6 +428,8 @@
         // Configuration storage
         const CONFIG_KEY = 'tenantPortalConfig';
         const TENANT_KEY = 'currentTenant';
+        const NOTIFICATION_KEY = 'tenantNotificationSettings';
+        const LAST_APPLICATIONS_KEY = 'tenantLastApplicationsCheck';
 
         let config = null;
         let currentTenant = null;
@@ -395,6 +447,12 @@
                 config = JSON.parse(saved);
                 document.getElementById('setupSection').classList.remove('active');
                 document.getElementById('loginSection').classList.add('active');
+
+                // Initialize EmailJS if notifications are enabled
+                const notificationSettings = getNotificationSettings();
+                if (notificationSettings.enabled && notificationSettings.publicKey) {
+                    emailjs.init(notificationSettings.publicKey);
+                }
 
                 // Check if already logged in
                 const savedTenant = localStorage.getItem(TENANT_KEY);
@@ -520,6 +578,9 @@
 
                 // Display dashboard data
                 displayDashboard();
+
+                // Check for application status changes and send notifications
+                await checkForApplicationUpdates();
 
             } catch (error) {
                 console.error('Error loading dashboard:', error);
@@ -712,6 +773,148 @@
                     <span class="info-value">${fields['Lease End Date'] || 'Not set'}</span>
                 </div>
             `;
+        }
+
+        // ========== NOTIFICATION FUNCTIONS ==========
+
+        function getNotificationSettings() {
+            const saved = localStorage.getItem(NOTIFICATION_KEY);
+            return saved ? JSON.parse(saved) : {
+                enabled: false,
+                email: '',
+                serviceId: '',
+                templateId: '',
+                publicKey: ''
+            };
+        }
+
+        function showNotificationSettings() {
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('applicationsSection').classList.remove('active');
+            document.getElementById('profileSection').classList.remove('active');
+            document.getElementById('notificationSettingsSection').classList.add('active');
+
+            document.getElementById('navDashboard').classList.remove('active');
+            document.getElementById('navApplications').classList.remove('active');
+            document.getElementById('navProfile').classList.remove('active');
+
+            // Load current settings
+            const settings = getNotificationSettings();
+            document.getElementById('enableNotifications').checked = settings.enabled;
+            document.getElementById('notificationEmail').value = settings.email;
+            document.getElementById('emailjsServiceId').value = settings.serviceId;
+            document.getElementById('emailjsTemplateId').value = settings.templateId;
+            document.getElementById('emailjsPublicKey').value = settings.publicKey;
+
+            // Show/hide fields based on checkbox
+            document.getElementById('notificationFields').style.display = settings.enabled ? 'block' : 'none';
+        }
+
+        function saveNotificationSettings(event) {
+            event.preventDefault();
+
+            const settings = {
+                enabled: document.getElementById('enableNotifications').checked,
+                email: document.getElementById('notificationEmail').value,
+                serviceId: document.getElementById('emailjsServiceId').value,
+                templateId: document.getElementById('emailjsTemplateId').value,
+                publicKey: document.getElementById('emailjsPublicKey').value
+            };
+
+            localStorage.setItem(NOTIFICATION_KEY, JSON.stringify(settings));
+
+            // Initialize EmailJS if enabled
+            if (settings.enabled && settings.publicKey) {
+                emailjs.init(settings.publicKey);
+            }
+
+            alert('✅ Notification settings saved!');
+            showDashboard();
+        }
+
+        // Toggle notification fields visibility
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkbox = document.getElementById('enableNotifications');
+            if (checkbox) {
+                checkbox.addEventListener('change', (e) => {
+                    document.getElementById('notificationFields').style.display = e.target.checked ? 'block' : 'none';
+                });
+            }
+        });
+
+        async function checkForApplicationUpdates() {
+            const settings = getNotificationSettings();
+            if (!settings.enabled || !allOffers || allOffers.length === 0) {
+                return;
+            }
+
+            const lastCheck = localStorage.getItem(LAST_APPLICATIONS_KEY);
+            if (!lastCheck) {
+                // First time, just store current state
+                localStorage.setItem(LAST_APPLICATIONS_KEY, JSON.stringify(allOffers.map(o => ({
+                    id: o.id,
+                    status: o.fields.Status
+                }))));
+                return;
+            }
+
+            const lastState = JSON.parse(lastCheck);
+            const changes = [];
+
+            allOffers.forEach(offer => {
+                const previous = lastState.find(s => s.id === offer.id);
+                if (previous && previous.status !== offer.fields.Status) {
+                    changes.push({
+                        offer: offer,
+                        oldStatus: previous.status,
+                        newStatus: offer.fields.Status
+                    });
+                }
+            });
+
+            // Update stored state
+            localStorage.setItem(LAST_APPLICATIONS_KEY, JSON.stringify(allOffers.map(o => ({
+                id: o.id,
+                status: o.fields.Status
+            }))));
+
+            // Send notifications for changes
+            if (changes.length > 0) {
+                for (const change of changes) {
+                    await sendApplicationUpdateNotification(change);
+                }
+                alert(`📧 ${changes.length} application status update(s) detected! Check your email.`);
+            }
+        }
+
+        async function sendApplicationUpdateNotification(change) {
+            const settings = getNotificationSettings();
+            if (!settings.enabled || !settings.serviceId || !settings.templateId) {
+                return;
+            }
+
+            try {
+                const templateParams = {
+                    to_email: settings.email,
+                    tenant_name: currentTenant.fields.Name || 'Tenant',
+                    unit: change.offer.fields['Unit (Linked Display)'] || 'N/A',
+                    old_status: change.oldStatus,
+                    new_status: change.newStatus,
+                    submission_date: change.offer.fields['Submission Date'] || 'N/A',
+                    offer_type: change.offer.fields['Offer Type'] || 'N/A',
+                    message: `Your application status has changed from "${change.oldStatus}" to "${change.newStatus}"`
+                };
+
+                await emailjs.send(
+                    settings.serviceId,
+                    settings.templateId,
+                    templateParams
+                );
+
+                console.log('✅ Application update notification sent');
+            } catch (error) {
+                console.error('❌ Failed to send notification:', error);
+            }
         }
     </script>
 </body>
