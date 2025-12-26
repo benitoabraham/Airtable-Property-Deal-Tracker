@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Property Management</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 5px; }
+        .subtitle { font-size: 1rem; opacity: 0.9; }
+        nav {
+            background: rgba(102, 126, 234, 0.9);
+            padding: 15px 30px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            text-align: center;
+            font-size: 0.75rem;
+            min-width: 80px;
+        }
+        .nav-link .icon {
+            font-size: 1.5rem;
+            display: block;
+        }
+        .nav-link:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        .nav-link.active {
+            background: rgba(255,255,255,0.3);
+        }
+        .content { padding: 40px; }
+        .setup-section, .login-section, .dashboard-section, .units-section, .offers-section, .tenants-section, .owners-section, .maintenance-section { display: none; }
+        .setup-section.active, .login-section.active, .dashboard-section.active, .units-section.active, .offers-section.active, .tenants-section.active, .owners-section.active, .maintenance-section.active { display: block; }
+        .card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .alert-warning { background: #fff3cd; border: 1px solid #ffc107; color: #856404; }
+        .alert-info { background: #d1ecf1; border: 1px solid #17a2b8; color: #0c5460; }
+        .alert-danger { background: #f8d7da; border: 1px solid #dc3545; color: #721c24; }
+        .alert-success { background: #d4edda; border: 1px solid #28a745; color: #155724; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-card .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .stat-card .number { font-size: 2.5rem; font-weight: 700; }
+        .stat-card .label { font-size: 0.9rem; opacity: 0.9; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .search-box {
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            margin-right: 5px;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .status-accepted { background: #d4edda; color: #155724; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-rejected { background: #f8d7da; color: #721c24; }
+        .status-active { background: #d4edda; color: #155724; }
+        .status-inactive { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div>
+                    <h1>🔧 Admin Dashboard</h1>
+                    <div class="subtitle">Property Management System - Full Database Access</div>
+                </div>
+                <div id="userInfo" style="display: none;">
+                    <span id="adminName"></span>
+                    <button onclick="logout()" class="btn-secondary" style="margin-left: 10px;">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <nav id="mainNav" style="display: none;">
+            <a href="#" class="nav-link active" id="navDashboard" onclick="showDashboard(); return false;">
+                <span class="icon">📊</span> Dashboard
+            </a>
+            <a href="#" class="nav-link" id="navUnits" onclick="showUnits(); return false;">
+                <span class="icon">🏢</span> Units
+            </a>
+            <a href="#" class="nav-link" id="navOffers" onclick="showOffers(); return false;">
+                <span class="icon">💼</span> Offers
+            </a>
+            <a href="#" class="nav-link" id="navTenants" onclick="showTenants(); return false;">
+                <span class="icon">👥</span> Tenants
+            </a>
+            <a href="#" class="nav-link" id="navOwners" onclick="showOwners(); return false;">
+                <span class="icon">👤</span> Owners
+            </a>
+            <a href="#" class="nav-link" id="navMaintenance" onclick="showMaintenance(); return false;">
+                <span class="icon">🔧</span> Maintenance
+            </a>
+        </nav>
+
+        <div class="content">
+            <div id="setupSection" class="setup-section active">
+                <div class="card">
+                    <h2>⚙️ Setup Required</h2>
+                    <div class="alert alert-warning">
+                        <strong>Step 1:</strong> Get your Airtable Personal Access Token from
+                        <a href="https://airtable.com/create/tokens" target="_blank">airtable.com/create/tokens</a>
+                    </div>
+                    <div id="setupError" class="alert alert-danger" style="display: none;"></div>
+                    <form id="setupForm" onsubmit="saveConfig(event)">
+                        <div class="form-group">
+                            <label for="apiToken">Airtable Personal Access Token</label>
+                            <input type="password" id="apiToken" placeholder="pat..." required>
+                        </div>
+                        <div class="form-group">
+                            <label for="baseId">Base ID</label>
+                            <input type="text" id="baseId" value="appeusp2Y6vN32ms2" required>
+                        </div>
+                        <button type="submit">Save Configuration</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="loginSection" class="login-section">
+                <div class="card">
+                    <h2>🔐 Admin Login</h2>
+                    <p style="color: #666; margin-bottom: 20px;">Sign in with your admin credentials</p>
+                    <div id="loginError" class="alert alert-danger" style="display: none;"></div>
+                    <form id="loginForm" onsubmit="login(event)">
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" placeholder="admin@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" placeholder="Enter password" required>
+                        </div>
+                        <button type="submit">Sign In</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="dashboardSection" class="dashboard-section">
+                <h2 style="margin-bottom: 20px;">📊 Dashboard Overview</h2>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="icon">🏢</div>
+                        <div class="number" id="totalUnits">0</div>
+                        <div class="label">Total Units</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">💼</div>
+                        <div class="number" id="totalOffers">0</div>
+                        <div class="label">Total Offers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">👥</div>
+                        <div class="number" id="totalTenants">0</div>
+                        <div class="label">Total Tenants</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">👤</div>
+                        <div class="number" id="totalOwners">0</div>
+                        <div class="label">Total Owners</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">🔧</div>
+                        <div class="number" id="totalMaintenance">0</div>
+                        <div class="label">Maintenance Tickets</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="unitsSection" class="units-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>🏢 Units Management</h2>
+                </div>
+                <div class="card">
+                    <div id="unitsList"></div>
+                </div>
+            </div>
+
+            <div id="offersSection" class="offers-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>💼 Offers Management</h2>
+                </div>
+                <div class="card">
+                    <div id="offersList"></div>
+                </div>
+            </div>
+
+            <div id="tenantsSection" class="tenants-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>👥 Tenants Management</h2>
+                </div>
+                <div class="card">
+                    <div id="tenantsList"></div>
+                </div>
+            </div>
+
+            <div id="ownersSection" class="owners-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>👤 Owners Management</h2>
+                </div>
+                <div class="card">
+                    <div id="ownersList"></div>
+                </div>
+            </div>
+
+            <div id="maintenanceSection" class="maintenance-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>🔧 Maintenance Tickets</h2>
+                </div>
+                <div class="card">
+                    <div id="maintenanceList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration storage
+        const CONFIG_KEY = 'adminDashboardConfig';
+        const ADMIN_KEY = 'currentAdmin';
+
+        let config = null;
+        let currentAdmin = null;
+        let allUnits = [];
+        let allOffers = [];
+        let allTenants = [];
+        let allOwners = [];
+        let allMaintenance = [];
+
+        // Load config on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadConfig();
+        });
+
+        function loadConfig() {
+            const saved = localStorage.getItem(CONFIG_KEY);
+            if (saved) {
+                config = JSON.parse(saved);
+                document.getElementById('setupSection').classList.remove('active');
+                document.getElementById('loginSection').classList.add('active');
+
+                // Check if already logged in
+                const savedAdmin = localStorage.getItem(ADMIN_KEY);
+                if (savedAdmin) {
+                    currentAdmin = JSON.parse(savedAdmin);
+                    loadDashboard();
+                }
+            }
+        }
+
+        async function saveConfig(event) {
+            event.preventDefault();
+
+            const apiToken = document.getElementById('apiToken').value;
+            const baseId = document.getElementById('baseId').value;
+
+            config = { apiToken, baseId };
+
+            try {
+                // Test the connection
+                const response = await fetch(`https://api.airtable.com/v0/${baseId}/Admins?maxRecords=1`, {
+                    headers: { 'Authorization': `Bearer ${apiToken}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Invalid API token or Base ID');
+                }
+
+                localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+                document.getElementById('setupSection').classList.remove('active');
+                document.getElementById('loginSection').classList.add('active');
+            } catch (error) {
+                document.getElementById('setupError').textContent = 'Error: ' + error.message;
+                document.getElementById('setupError').style.display = 'block';
+            }
+        }
+
+        async function login(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                // Fetch admin by email
+                const response = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Admins?filterByFormula={Email}='${email}'`,
+                    { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
+                );
+
+                const data = await response.json();
+
+                if (data.records.length === 0) {
+                    throw new Error('No admin found with this email');
+                }
+
+                currentAdmin = data.records[0];
+
+                // Verify password
+                const storedPassword = currentAdmin.fields.Password;
+                if (!storedPassword || storedPassword !== password) {
+                    throw new Error('Invalid password');
+                }
+
+                // Store admin info
+                localStorage.setItem(ADMIN_KEY, JSON.stringify(currentAdmin));
+
+                // Load dashboard
+                loadDashboard();
+
+            } catch (error) {
+                document.getElementById('loginError').textContent = error.message;
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem(ADMIN_KEY);
+            currentAdmin = null;
+            allUnits = [];
+            allOffers = [];
+            allTenants = [];
+            allOwners = [];
+            allMaintenance = [];
+
+            document.getElementById('loginSection').classList.add('active');
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('unitsSection').classList.remove('active');
+            document.getElementById('offersSection').classList.remove('active');
+            document.getElementById('tenantsSection').classList.remove('active');
+            document.getElementById('ownersSection').classList.remove('active');
+            document.getElementById('maintenanceSection').classList.remove('active');
+            document.getElementById('mainNav').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'none';
+
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        async function loadDashboard() {
+            try {
+                // Show main interface
+                document.getElementById('loginSection').classList.remove('active');
+                document.getElementById('dashboardSection').classList.add('active');
+                document.getElementById('mainNav').style.display = 'flex';
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('adminName').textContent = currentAdmin.fields.Name || currentAdmin.fields.Email || 'Admin';
+
+                // Load all data
+                await Promise.all([
+                    loadUnits(),
+                    loadOffers(),
+                    loadTenants(),
+                    loadOwners(),
+                    loadMaintenance()
+                ]);
+
+                // Update stats
+                document.getElementById('totalUnits').textContent = allUnits.length;
+                document.getElementById('totalOffers').textContent = allOffers.length;
+                document.getElementById('totalTenants').textContent = allTenants.length;
+                document.getElementById('totalOwners').textContent = allOwners.length;
+                document.getElementById('totalMaintenance').textContent = allMaintenance.length;
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                alert('Error loading dashboard: ' + error.message);
+            }
+        }
+
+        async function loadUnits() {
+            const response = await fetch(
+                `https://api.airtable.com/v0/${config.baseId}/Units`,
+                { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
+            );
+            const data = await response.json();
+            allUnits = data.records;
+        }
+
+        async function loadOffers() {
+            const response = await fetch(
+                `https://api.airtable.com/v0/${config.baseId}/Offers`,
+                { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
+            );
+            const data = await response.json();
+            allOffers = data.records;
+        }
+
+        async function loadTenants() {
+            const response = await fetch(
+                `https://api.airtable.com/v0/${config.baseId}/Tenants`,
+                { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
+            );
+            const data = await response.json();
+            allTenants = data.records;
+        }
+
+        async function loadOwners() {
+            const response = await fetch(
+                `https://api.airtable.com/v0/${config.baseId}/Owners`,
+                { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
+            );
+            const data = await response.json();
+            allOwners = data.records;
+        }
+
+        async function loadMaintenance() {
+            const response = await fetch(
+                `https://api.airtable.com/v0/${config.baseId}/Maintenance%20Tickets`,
+                { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
+            );
+            const data = await response.json();
+            allMaintenance = data.records;
+        }
+
+        function showDashboard() {
+            document.getElementById('dashboardSection').classList.add('active');
+            document.getElementById('unitsSection').classList.remove('active');
+            document.getElementById('offersSection').classList.remove('active');
+            document.getElementById('tenantsSection').classList.remove('active');
+            document.getElementById('ownersSection').classList.remove('active');
+            document.getElementById('maintenanceSection').classList.remove('active');
+
+            document.getElementById('navDashboard').classList.add('active');
+            document.getElementById('navUnits').classList.remove('active');
+            document.getElementById('navOffers').classList.remove('active');
+            document.getElementById('navTenants').classList.remove('active');
+            document.getElementById('navOwners').classList.remove('active');
+            document.getElementById('navMaintenance').classList.remove('active');
+        }
+
+        function showUnits() {
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('unitsSection').classList.add('active');
+            document.getElementById('offersSection').classList.remove('active');
+            document.getElementById('tenantsSection').classList.remove('active');
+            document.getElementById('ownersSection').classList.remove('active');
+            document.getElementById('maintenanceSection').classList.remove('active');
+
+            document.getElementById('navDashboard').classList.remove('active');
+            document.getElementById('navUnits').classList.add('active');
+            document.getElementById('navOffers').classList.remove('active');
+            document.getElementById('navTenants').classList.remove('active');
+            document.getElementById('navOwners').classList.remove('active');
+            document.getElementById('navMaintenance').classList.remove('active');
+
+            displayUnits();
+        }
+
+        function showOffers() {
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('unitsSection').classList.remove('active');
+            document.getElementById('offersSection').classList.add('active');
+            document.getElementById('tenantsSection').classList.remove('active');
+            document.getElementById('ownersSection').classList.remove('active');
+            document.getElementById('maintenanceSection').classList.remove('active');
+
+            document.getElementById('navDashboard').classList.remove('active');
+            document.getElementById('navUnits').classList.remove('active');
+            document.getElementById('navOffers').classList.add('active');
+            document.getElementById('navTenants').classList.remove('active');
+            document.getElementById('navOwners').classList.remove('active');
+            document.getElementById('navMaintenance').classList.remove('active');
+
+            displayOffers();
+        }
+
+        function showTenants() {
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('unitsSection').classList.remove('active');
+            document.getElementById('offersSection').classList.remove('active');
+            document.getElementById('tenantsSection').classList.add('active');
+            document.getElementById('ownersSection').classList.remove('active');
+            document.getElementById('maintenanceSection').classList.remove('active');
+
+            document.getElementById('navDashboard').classList.remove('active');
+            document.getElementById('navUnits').classList.remove('active');
+            document.getElementById('navOffers').classList.remove('active');
+            document.getElementById('navTenants').classList.add('active');
+            document.getElementById('navOwners').classList.remove('active');
+            document.getElementById('navMaintenance').classList.remove('active');
+
+            displayTenants();
+        }
+
+        function showOwners() {
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('unitsSection').classList.remove('active');
+            document.getElementById('offersSection').classList.remove('active');
+            document.getElementById('tenantsSection').classList.remove('active');
+            document.getElementById('ownersSection').classList.add('active');
+            document.getElementById('maintenanceSection').classList.remove('active');
+
+            document.getElementById('navDashboard').classList.remove('active');
+            document.getElementById('navUnits').classList.remove('active');
+            document.getElementById('navOffers').classList.remove('active');
+            document.getElementById('navTenants').classList.remove('active');
+            document.getElementById('navOwners').classList.add('active');
+            document.getElementById('navMaintenance').classList.remove('active');
+
+            displayOwners();
+        }
+
+        function showMaintenance() {
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('unitsSection').classList.remove('active');
+            document.getElementById('offersSection').classList.remove('active');
+            document.getElementById('tenantsSection').classList.remove('active');
+            document.getElementById('ownersSection').classList.remove('active');
+            document.getElementById('maintenanceSection').classList.add('active');
+
+            document.getElementById('navDashboard').classList.remove('active');
+            document.getElementById('navUnits').classList.remove('active');
+            document.getElementById('navOffers').classList.remove('active');
+            document.getElementById('navTenants').classList.remove('active');
+            document.getElementById('navOwners').classList.remove('active');
+            document.getElementById('navMaintenance').classList.add('active');
+
+            displayMaintenance();
+        }
+
+        function displayUnits() {
+            const html = `
+                <input type="text" class="search-box" placeholder="Search units..." id="unitsSearch">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Unit ID</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Base Rent</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allUnits.map(unit => {
+                            const fields = unit.fields;
+                            return `
+                                <tr>
+                                    <td><strong>${fields['Unit ID'] || 'N/A'}</strong></td>
+                                    <td>${fields.Name || 'N/A'}</td>
+                                    <td>${fields['Unit Type'] || 'N/A'}</td>
+                                    <td><span class="status-badge ${fields.Status === 'Occupied' ? 'status-accepted' : 'status-pending'}">${fields.Status || 'N/A'}</span></td>
+                                    <td>$${(fields['Base Rent'] || 0).toLocaleString()}</td>
+                                    <td>
+                                        <button class="btn-small" onclick="alert('Edit unit: ${unit.id}')">✏️ Edit</button>
+                                        <button class="btn-small btn-danger" onclick="deleteRecord('Units', '${unit.id}', 'unit')">🗑️ Delete</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px;">Total: ${allUnits.length} units</div>
+            `;
+            document.getElementById('unitsList').innerHTML = html;
+        }
+
+        function displayOffers() {
+            const html = `
+                <input type="text" class="search-box" placeholder="Search offers..." id="offersSearch">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Offer ID</th>
+                            <th>Unit</th>
+                            <th>Tenant</th>
+                            <th>Bid Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allOffers.map(offer => {
+                            const fields = offer.fields;
+                            const status = fields['Bid Status'] || 'Pending';
+                            return `
+                                <tr>
+                                    <td><strong>${fields['Bid ID'] || 'N/A'}</strong></td>
+                                    <td>${fields['Name (from Unit) (from Availability Period)']?.[0] || 'N/A'}</td>
+                                    <td>${fields['Email (from Tenant (Linked))']?.[0] || 'N/A'}</td>
+                                    <td>$${(fields['Bid Amount'] || 0).toLocaleString()}</td>
+                                    <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
+                                    <td>
+                                        <button class="btn-small" onclick="alert('Edit offer: ${offer.id}')">✏️ Edit</button>
+                                        <button class="btn-small btn-danger" onclick="deleteRecord('Offers', '${offer.id}', 'offer')">🗑️ Delete</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px;">Total: ${allOffers.length} offers</div>
+            `;
+            document.getElementById('offersList').innerHTML = html;
+        }
+
+        function displayTenants() {
+            const html = `
+                <input type="text" class="search-box" placeholder="Search tenants..." id="tenantsSearch">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Current Unit</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allTenants.map(tenant => {
+                            const fields = tenant.fields;
+                            return `
+                                <tr>
+                                    <td><strong>${fields.Name || 'N/A'}</strong></td>
+                                    <td>${fields.Email || 'N/A'}</td>
+                                    <td>${fields.Phone || 'N/A'}</td>
+                                    <td><span class="status-badge status-${fields.Status === 'Active' ? 'active' : 'inactive'}">${fields.Status || 'N/A'}</span></td>
+                                    <td>${fields['Current Unit']?.[0] || '-'}</td>
+                                    <td>
+                                        <button class="btn-small" onclick="alert('Edit tenant: ${tenant.id}')">✏️ Edit</button>
+                                        <button class="btn-small btn-danger" onclick="deleteRecord('Tenants', '${tenant.id}', 'tenant')">🗑️ Delete</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px;">Total: ${allTenants.length} tenants</div>
+            `;
+            document.getElementById('tenantsList').innerHTML = html;
+        }
+
+        function displayOwners() {
+            const html = `
+                <input type="text" class="search-box" placeholder="Search owners..." id="ownersSearch">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allOwners.map(owner => {
+                            const fields = owner.fields;
+                            return `
+                                <tr>
+                                    <td><strong>${fields.Name || 'N/A'}</strong></td>
+                                    <td>${fields.Email || 'N/A'}</td>
+                                    <td>${fields.Phone || 'N/A'}</td>
+                                    <td>
+                                        <button class="btn-small" onclick="alert('Edit owner: ${owner.id}')">✏️ Edit</button>
+                                        <button class="btn-small btn-danger" onclick="deleteRecord('Owners', '${owner.id}', 'owner')">🗑️ Delete</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px;">Total: ${allOwners.length} owners</div>
+            `;
+            document.getElementById('ownersList').innerHTML = html;
+        }
+
+        function displayMaintenance() {
+            const html = `
+                <input type="text" class="search-box" placeholder="Search tickets..." id="maintenanceSearch">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Issue</th>
+                            <th>Unit</th>
+                            <th>Tenant</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allMaintenance.map(ticket => {
+                            const fields = ticket.fields;
+                            return `
+                                <tr>
+                                    <td><strong>${fields.Issue || 'N/A'}</strong></td>
+                                    <td>${fields.Unit?.[0] || 'N/A'}</td>
+                                    <td>${fields.Tenant?.[0] || 'N/A'}</td>
+                                    <td><span class="status-badge status-${(fields.Priority || '').toLowerCase()}">${fields.Priority || 'N/A'}</span></td>
+                                    <td><span class="status-badge status-${fields.Status === 'Completed' ? 'active' : 'pending'}">${fields.Status || 'N/A'}</span></td>
+                                    <td>${fields['Submitted Date'] || 'N/A'}</td>
+                                    <td>
+                                        <button class="btn-small" onclick="alert('Edit ticket: ${ticket.id}')">✏️ Edit</button>
+                                        <button class="btn-small btn-danger" onclick="deleteRecord('Maintenance Tickets', '${ticket.id}', 'ticket')">🗑️ Delete</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px;">Total: ${allMaintenance.length} tickets</div>
+            `;
+            document.getElementById('maintenanceList').innerHTML = html;
+        }
+
+        async function deleteRecord(tableName, recordId, displayName) {
+            if (!confirm(`Are you sure you want to delete this ${displayName}? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/${encodeURIComponent(tableName)}/${recordId}`,
+                    {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${config.apiToken}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    alert(`✅ ${displayName.charAt(0).toUpperCase() + displayName.slice(1)} deleted successfully!`);
+                    await loadDashboard();
+
+                    // Refresh current view
+                    if (tableName === 'Units') showUnits();
+                    else if (tableName === 'Offers') showOffers();
+                    else if (tableName === 'Tenants') showTenants();
+                    else if (tableName === 'Owners') showOwners();
+                    else if (tableName === 'Maintenance Tickets') showMaintenance();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Error deleting record: ' + (error.error?.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
