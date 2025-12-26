@@ -436,12 +436,16 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="editUnitType">Type</label>
+                            <label for="editUnitType">Unit Type</label>
                             <select id="editUnitType">
+                                <option value="Studio">Studio</option>
+                                <option value="1 Bedroom">1 Bedroom</option>
+                                <option value="2 Bedroom">2 Bedroom</option>
+                                <option value="3 Bedroom">3 Bedroom</option>
+                                <option value="4+ Bedroom">4+ Bedroom</option>
                                 <option value="Apartment">Apartment</option>
                                 <option value="House">House</option>
                                 <option value="Condo">Condo</option>
-                                <option value="Studio">Studio</option>
                                 <option value="Commercial">Commercial</option>
                             </select>
                         </div>
@@ -466,7 +470,7 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="editUnitSize">Size (sqft)</label>
+                            <label for="editUnitSize">Square Feet</label>
                             <input type="number" id="editUnitSize" min="0">
                         </div>
                         <div class="form-group">
@@ -1180,11 +1184,11 @@
             const fields = unit.fields;
             document.getElementById('editUnitId').value = unitId;
             document.getElementById('editUnitIdField').value = fields['Unit ID'] || '';
-            document.getElementById('editUnitType').value = fields.Type || 'Apartment';
+            document.getElementById('editUnitType').value = fields['Unit Type'] || 'Studio';
             document.getElementById('editUnitStatus').value = fields.Status || 'Available';
             document.getElementById('editUnitBedrooms').value = fields.Bedrooms || '';
             document.getElementById('editUnitBathrooms').value = fields.Bathrooms || '';
-            document.getElementById('editUnitSize').value = fields['Size (sqft)'] || '';
+            document.getElementById('editUnitSize').value = fields['Square Feet'] || '';
             document.getElementById('editUnitRent').value = fields['Base Rent'] || '';
             document.getElementById('editUnitAddress').value = fields.Address || '';
 
@@ -1202,11 +1206,11 @@
             const unitId = document.getElementById('editUnitId').value;
             const updatedFields = {
                 'Unit ID': document.getElementById('editUnitIdField').value,
-                'Type': document.getElementById('editUnitType').value,
+                'Unit Type': document.getElementById('editUnitType').value,
                 'Status': document.getElementById('editUnitStatus').value,
                 'Bedrooms': parseInt(document.getElementById('editUnitBedrooms').value) || 0,
                 'Bathrooms': parseFloat(document.getElementById('editUnitBathrooms').value) || 0,
-                'Size (sqft)': parseInt(document.getElementById('editUnitSize').value) || 0,
+                'Square Feet': parseInt(document.getElementById('editUnitSize').value) || 0,
                 'Base Rent': parseFloat(document.getElementById('editUnitRent').value) || 0,
                 'Address': document.getElementById('editUnitAddress').value
             };
