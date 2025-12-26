@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenant Portal - Property Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        button, a, input, select, textarea {
+            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+            touch-action: manipulation;
+        }
+        button:active, a:active {
+            transform: scale(0.98);
+            transition: transform 0.1s;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 5px; }
+        .subtitle { font-size: 0.95rem; opacity: 0.9; }
+        nav {
+            background: rgba(102, 126, 234, 0.9);
+            padding: 15px 30px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            text-align: center;
+            font-size: 0.75rem;
+            min-width: 80px;
+        }
+        .nav-link .icon {
+            font-size: 1.5rem;
+            display: block;
+        }
+        .nav-link:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        .nav-link.active {
+            background: rgba(255,255,255,0.3);
+        }
+        .content { padding: 40px; }
+        .setup-section, .login-section, .dashboard-section, .applications-section, .profile-section { display: none; }
+        .setup-section.active, .login-section.active, .dashboard-section.active, .applications-section.active, .profile-section.active { display: block; }
+        .card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .alert-warning { background: #fff3cd; border: 1px solid #ffc107; color: #856404; }
+        .alert-info { background: #d1ecf1; border: 1px solid #17a2b8; color: #0c5460; }
+        .alert-danger { background: #f8d7da; border: 1px solid #dc3545; color: #721c24; }
+        .alert-success { background: #d4edda; border: 1px solid #28a745; color: #155724; }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .info-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+        }
+        .info-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .status-active { background: #d4edda; color: #155724; }
+        .status-prospective { background: #d1ecf1; color: #0c5460; }
+        .status-inactive { background: #f8d7da; color: #721c24; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { border-radius: 8px; }
+            header { padding: 20px 15px; }
+            h1 { font-size: 1.3rem; }
+            .subtitle { font-size: 0.85rem; }
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            #userInfo {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            #userInfo button {
+                width: 100%;
+                margin: 0 !important;
+            }
+            nav {
+                flex-wrap: wrap;
+                gap: 5px;
+                justify-content: center;
+            }
+            .nav-link {
+                font-size: 0.7rem;
+                padding: 10px 12px;
+                min-width: 75px;
+            }
+            .nav-link .icon {
+                font-size: 1.4rem;
+            }
+            .content { padding: 15px; }
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            table { font-size: 0.85rem; }
+            th, td { padding: 8px 6px; }
+
+            @media (max-width: 480px) {
+                h1 { font-size: 1.1rem; }
+                .nav-link {
+                    font-size: 0.65rem;
+                    padding: 8px 10px;
+                    min-width: 70px;
+                }
+                .nav-link .icon {
+                    font-size: 1.3rem;
+                }
+                table { font-size: 0.75rem; }
+                th, td { padding: 6px 4px; }
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div>
+                    <h1>🏠 Tenant Portal</h1>
+                    <div class="subtitle">Your Rental Information</div>
+                </div>
+                <div id="userInfo" style="display: none;">
+                    <span id="userName"></span>
+                    <button onclick="logout()" class="btn-secondary" style="margin-left: 10px;">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <nav id="mainNav" style="display: none;">
+            <a href="#" class="nav-link active" id="navDashboard" onclick="showDashboard(); return false;">
+                <span class="icon">🏠</span> My Home
+            </a>
+            <a href="#" class="nav-link" id="navApplications" onclick="showApplications(); return false;">
+                <span class="icon">📝</span> My Applications
+            </a>
+            <a href="#" class="nav-link" id="navProfile" onclick="showProfile(); return false;">
+                <span class="icon">👤</span> My Profile
+            </a>
+        </nav>
+
+        <div class="content">
+            <div id="setupSection" class="setup-section active">
+                <div class="card">
+                    <h2>⚙️ Setup Required</h2>
+                    <div class="alert alert-warning">
+                        <strong>Step 1:</strong> Get your Airtable Personal Access Token from
+                        <a href="https://airtable.com/create/tokens" target="_blank">airtable.com/create/tokens</a>
+                    </div>
+                    <div id="setupStatus" class="alert alert-info" style="display: none;"></div>
+                    <div id="setupError" class="alert alert-danger" style="display: none;"></div>
+                    <form id="setupForm" onsubmit="saveConfig(event)">
+                        <div class="form-group">
+                            <label for="apiToken">Airtable Personal Access Token</label>
+                            <input type="password" id="apiToken" placeholder="pat..." required>
+                        </div>
+                        <div class="form-group">
+                            <label for="baseId">Base ID</label>
+                            <input type="text" id="baseId" value="appeusp2Y6vN32ms2" required>
+                        </div>
+                        <button type="submit">Save Configuration</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="loginSection" class="login-section">
+                <div class="card">
+                    <h2>🔐 Tenant Portal</h2>
+                    <p style="color: #666; margin-bottom: 20px;">Sign in with your tenant email</p>
+                    <div id="loginError" class="alert alert-danger" style="display: none;"></div>
+                    <form id="loginForm" onsubmit="login(event)">
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" placeholder="tenant@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" placeholder="Enter password" required>
+                        </div>
+                        <button type="submit">Sign In</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="dashboardSection" class="dashboard-section">
+                <h2 style="margin-bottom: 20px;">🏠 My Home</h2>
+
+                <div id="currentUnitInfo" class="info-grid">
+                    <!-- Current unit info will be populated here -->
+                </div>
+
+                <div class="card">
+                    <h3>📋 Lease Information</h3>
+                    <div id="leaseInfo">
+                        <!-- Lease details will be populated here -->
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📞 Contact Information</h3>
+                    <div id="contactInfo">
+                        <!-- Owner/property manager contact will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="applicationsSection" class="applications-section">
+                <h2 style="margin-bottom: 20px;">📝 My Applications</h2>
+                <div class="card">
+                    <div id="applicationsList">
+                        <!-- Applications will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="profileSection" class="profile-section">
+                <h2 style="margin-bottom: 20px;">👤 My Profile</h2>
+                <div class="card">
+                    <div id="profileInfo">
+                        <!-- Profile information will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration storage
+        const CONFIG_KEY = 'tenantPortalConfig';
+        const TENANT_KEY = 'currentTenant';
+
+        let config = null;
+        let currentTenant = null;
+        let currentUnit = null;
+        let allOffers = [];
+
+        // Load config on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadConfig();
+        });
+
+        function loadConfig() {
+            const saved = localStorage.getItem(CONFIG_KEY);
+            if (saved) {
+                config = JSON.parse(saved);
+                document.getElementById('setupSection').classList.remove('active');
+                document.getElementById('loginSection').classList.add('active');
+
+                // Check if already logged in
+                const savedTenant = localStorage.getItem(TENANT_KEY);
+                if (savedTenant) {
+                    currentTenant = JSON.parse(savedTenant);
+                    loadDashboard();
+                }
+            }
+        }
+
+        async function saveConfig(event) {
+            event.preventDefault();
+
+            const apiToken = document.getElementById('apiToken').value;
+            const baseId = document.getElementById('baseId').value;
+
+            config = { apiToken, baseId };
+
+            try {
+                // Test the connection
+                const response = await fetch(`https://api.airtable.com/v0/${baseId}/Tenants?maxRecords=1`, {
+                    headers: { 'Authorization': `Bearer ${apiToken}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Invalid API token or Base ID');
+                }
+
+                localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+                document.getElementById('setupSection').classList.remove('active');
+                document.getElementById('loginSection').classList.add('active');
+            } catch (error) {
+                document.getElementById('setupError').textContent = 'Error: ' + error.message;
+                document.getElementById('setupError').style.display = 'block';
+            }
+        }
+
+        async function login(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                // Fetch tenant by email
+                const response = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Tenants?filterByFormula={Email}='${email}'`,
+                    { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
+                );
+
+                const data = await response.json();
+
+                if (data.records.length === 0) {
+                    throw new Error('No tenant found with this email');
+                }
+
+                currentTenant = data.records[0];
+
+                // Store tenant info
+                localStorage.setItem(TENANT_KEY, JSON.stringify(currentTenant));
+
+                // Load dashboard
+                loadDashboard();
+
+            } catch (error) {
+                document.getElementById('loginError').textContent = error.message;
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem(TENANT_KEY);
+            currentTenant = null;
+            currentUnit = null;
+            allOffers = [];
+
+            document.getElementById('loginSection').classList.add('active');
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('applicationsSection').classList.remove('active');
+            document.getElementById('profileSection').classList.remove('active');
+            document.getElementById('mainNav').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'none';
+
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        async function loadDashboard() {
+            try {
+                // Show main interface
+                document.getElementById('loginSection').classList.remove('active');
+                document.getElementById('dashboardSection').classList.add('active');
+                document.getElementById('mainNav').style.display = 'flex';
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('userName').textContent = currentTenant.fields.Name || 'Tenant';
+
+                // Load current unit
+                const unitId = currentTenant.fields['Current Unit'];
+                if (unitId && unitId.length > 0) {
+                    const unitResponse = await fetch(
+                        `https://api.airtable.com/v0/${config.baseId}/Units/${unitId[0]}`,
+                        { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
+                    );
+                    currentUnit = await unitResponse.json();
+                }
+
+                // Load offers/applications for this tenant
+                const offersResponse = await fetch(
+                    `https://api.airtable.com/v0/${config.baseId}/Offers`,
+                    { headers: { 'Authorization': `Bearer ${config.apiToken}` } }
+                );
+                const offersData = await offersResponse.json();
+                allOffers = offersData.records.filter(offer => {
+                    const tenantField = offer.fields['Tenant (Linked)'];
+                    return tenantField && tenantField.includes(currentTenant.id);
+                });
+
+                // Display dashboard data
+                displayDashboard();
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                alert('Error loading dashboard: ' + error.message);
+            }
+        }
+
+        function displayDashboard() {
+            // Display current unit info
+            if (currentUnit) {
+                const fields = currentUnit.fields;
+                document.getElementById('currentUnitInfo').innerHTML = `
+                    <div class="info-card">
+                        <h3>🏢 Unit Details</h3>
+                        <div class="info-row">
+                            <span class="info-label">Unit ID:</span>
+                            <span class="info-value">${fields['Unit ID'] || 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Name:</span>
+                            <span class="info-value">${fields.Name || 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Type:</span>
+                            <span class="info-value">${fields['Unit Type'] || 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Status:</span>
+                            <span class="info-value">${fields.Status || 'N/A'}</span>
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <h3>💰 Rent Information</h3>
+                        <div class="info-row">
+                            <span class="info-label">Monthly Rent:</span>
+                            <span class="info-value">$${fields['Target Rent'] || '0'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Square Feet:</span>
+                            <span class="info-value">${fields['Square Feet'] || 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('currentUnitInfo').innerHTML = `
+                    <div class="alert alert-info">
+                        <strong>No current unit assigned</strong>
+                        <p>You don't have a unit assigned at this time. Check your applications for pending offers.</p>
+                    </div>
+                `;
+            }
+
+            // Display lease info
+            const tenantFields = currentTenant.fields;
+            document.getElementById('leaseInfo').innerHTML = `
+                <div class="info-row">
+                    <span class="info-label">Move-in Date:</span>
+                    <span class="info-value">${tenantFields['Move-in Date'] || 'Not set'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Lease End Date:</span>
+                    <span class="info-value">${tenantFields['Lease End Date'] || 'Not set'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="status-badge status-${(tenantFields.Status || '').toLowerCase()}">${tenantFields.Status || 'N/A'}</span>
+                </div>
+            `;
+
+            // Display contact info (placeholder)
+            document.getElementById('contactInfo').innerHTML = `
+                <div class="info-row">
+                    <span class="info-label">Property Management:</span>
+                    <span class="info-value">Thompson & Chen Investment LLC</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">contact@tcproperties.com</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">(555) 123-4567</span>
+                </div>
+            `;
+        }
+
+        function showDashboard() {
+            document.getElementById('dashboardSection').classList.add('active');
+            document.getElementById('applicationsSection').classList.remove('active');
+            document.getElementById('profileSection').classList.remove('active');
+
+            document.getElementById('navDashboard').classList.add('active');
+            document.getElementById('navApplications').classList.remove('active');
+            document.getElementById('navProfile').classList.remove('active');
+
+            displayDashboard();
+        }
+
+        function showApplications() {
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('applicationsSection').classList.add('active');
+            document.getElementById('profileSection').classList.remove('active');
+
+            document.getElementById('navDashboard').classList.remove('active');
+            document.getElementById('navApplications').classList.add('active');
+            document.getElementById('navProfile').classList.remove('active');
+
+            displayApplications();
+        }
+
+        function displayApplications() {
+            if (!allOffers || allOffers.length === 0) {
+                document.getElementById('applicationsList').innerHTML = `
+                    <div class="alert alert-info">
+                        <strong>No applications found</strong>
+                        <p>You don't have any rental applications at this time.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableHtml = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Unit</th>
+                            <th>Submission Date</th>
+                            <th>Offer Type</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allOffers.map(offer => {
+                            const fields = offer.fields;
+                            return `
+                                <tr>
+                                    <td>${fields['Unit (Linked Display)'] || 'N/A'}</td>
+                                    <td>${fields['Submission Date'] || 'N/A'}</td>
+                                    <td>${fields['Offer Type'] || 'N/A'}</td>
+                                    <td><span class="status-badge status-${(fields.Status || '').toLowerCase().replace(' ', '-')}">${fields.Status || 'N/A'}</span></td>
+                                    <td>${fields.Notes || '-'}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById('applicationsList').innerHTML = tableHtml;
+        }
+
+        function showProfile() {
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('applicationsSection').classList.remove('active');
+            document.getElementById('profileSection').classList.add('active');
+
+            document.getElementById('navDashboard').classList.remove('active');
+            document.getElementById('navApplications').classList.remove('active');
+            document.getElementById('navProfile').classList.add('active');
+
+            displayProfile();
+        }
+
+        function displayProfile() {
+            const fields = currentTenant.fields;
+            document.getElementById('profileInfo').innerHTML = `
+                <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value">${fields.Name || 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">${fields.Email || 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">${fields.Phone || 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="status-badge status-${(fields.Status || '').toLowerCase()}">${fields.Status || 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Move-in Date:</span>
+                    <span class="info-value">${fields['Move-in Date'] || 'Not set'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Lease End Date:</span>
+                    <span class="info-value">${fields['Lease End Date'] || 'Not set'}</span>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
