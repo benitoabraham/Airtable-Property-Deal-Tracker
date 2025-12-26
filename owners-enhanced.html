@@ -234,29 +234,35 @@
             100% { transform: rotate(360deg); }
         }
         .quick-links {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
             margin-top: 30px;
+            justify-content: center;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 20px;
+            border-radius: 12px;
         }
         .quick-link-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 25px;
-            border-radius: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
             text-decoration: none;
             transition: all 0.3s;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 6px;
+            align-items: center;
+            text-align: center;
+            font-size: 0.75rem;
+            min-width: 80px;
         }
         .quick-link-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #7b8df5 0%, #8a5ab8 100%);
+            transform: translateY(-2px);
         }
-        .quick-link-card .icon { font-size: 2.5rem; }
-        .quick-link-card h3 { color: white; margin: 0; }
-        .quick-link-card p { color: rgba(255,255,255,0.9); font-size: 0.9rem; margin: 0; }
+        .quick-link-card .icon { font-size: 1.5rem; display: block; }
         .empty-state {
             text-align: center;
             padding: 40px;
@@ -477,20 +483,16 @@
 
             /* Quick Links */
             .quick-links {
-                grid-template-columns: 1fr;
+                padding: 15px;
                 gap: 12px;
             }
             .quick-link-card {
-                padding: 15px;
+                padding: 10px 12px;
+                font-size: 0.7rem;
+                min-width: 75px;
             }
             .quick-link-card .icon {
-                font-size: 2rem;
-            }
-            .quick-link-card h3 {
-                font-size: 1rem;
-            }
-            .quick-link-card p {
-                font-size: 0.85rem;
+                font-size: 1.4rem;
             }
 
             /* Tables */
@@ -603,6 +605,17 @@
                     min-width: 70px;
                 }
                 .nav-link .icon {
+                    font-size: 1.3rem;
+                }
+                .quick-links {
+                    padding: 12px;
+                }
+                .quick-link-card {
+                    font-size: 0.65rem;
+                    padding: 8px 10px;
+                    min-width: 70px;
+                }
+                .quick-link-card .icon {
                     font-size: 1.3rem;
                 }
                 .stats-grid {
@@ -755,19 +768,13 @@
 
                 <div class="quick-links">
                     <a href="#" onclick="showUnitsManagement(); return false;" class="quick-link-card">
-                        <span class="icon">🏢</span>
-                        <h3>Units Management</h3>
-                        <p>View and manage your units</p>
+                        <span class="icon">🏢</span> Buildings & Units
                     </a>
                     <a href="#" onclick="showOffersManagement(); return false;" class="quick-link-card">
-                        <span class="icon">💼</span>
-                        <h3>Offers Management</h3>
-                        <p>Review and manage offers</p>
+                        <span class="icon">💼</span> Business Offers
                     </a>
                     <a href="#" onclick="showTenantsManagement(); return false;" class="quick-link-card">
-                        <span class="icon">👥</span>
-                        <h3>Tenants Management</h3>
-                        <p>View and manage tenants</p>
+                        <span class="icon">👥</span> People & Tenants
                     </a>
                 </div>
 
