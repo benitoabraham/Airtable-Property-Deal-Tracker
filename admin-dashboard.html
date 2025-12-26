@@ -478,9 +478,19 @@
                             <input type="number" id="editUnitRent" min="0" step="0.01">
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editUnitFloor">Floor</label>
+                            <input type="number" id="editUnitFloor" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="editUnitAskingRent">Asking Rent ($)</label>
+                            <input type="number" id="editUnitAskingRent" min="0" step="0.01">
+                        </div>
+                    </div>
                     <div class="form-group">
-                        <label for="editUnitAddress">Address</label>
-                        <textarea id="editUnitAddress" rows="2"></textarea>
+                        <label for="editUnitDescription">Description</label>
+                        <textarea id="editUnitDescription" rows="3"></textarea>
                     </div>
                     <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
                         <button type="button" class="btn-secondary" onclick="closeEditUnitModal()">Cancel</button>
@@ -1190,7 +1200,9 @@
             document.getElementById('editUnitBathrooms').value = fields.Bathrooms || '';
             document.getElementById('editUnitSize').value = fields['Square Feet'] || '';
             document.getElementById('editUnitRent').value = fields['Base Rent'] || '';
-            document.getElementById('editUnitAddress').value = fields.Address || '';
+            document.getElementById('editUnitFloor').value = fields.Floor || '';
+            document.getElementById('editUnitAskingRent').value = fields['Asking Rent'] || '';
+            document.getElementById('editUnitDescription').value = fields.Description || '';
 
             document.getElementById('editUnitModal').classList.add('active');
         }
@@ -1207,13 +1219,30 @@
             const updatedFields = {
                 'Unit ID': document.getElementById('editUnitIdField').value,
                 'Unit Type': document.getElementById('editUnitType').value,
-                'Status': document.getElementById('editUnitStatus').value,
-                'Bedrooms': parseInt(document.getElementById('editUnitBedrooms').value) || 0,
-                'Bathrooms': parseFloat(document.getElementById('editUnitBathrooms').value) || 0,
-                'Square Feet': parseInt(document.getElementById('editUnitSize').value) || 0,
-                'Base Rent': parseFloat(document.getElementById('editUnitRent').value) || 0,
-                'Address': document.getElementById('editUnitAddress').value
+                'Status': document.getElementById('editUnitStatus').value
             };
+
+            // Add optional numeric fields only if they have values
+            const bedrooms = document.getElementById('editUnitBedrooms').value;
+            if (bedrooms !== '') updatedFields['Bedrooms'] = parseFloat(bedrooms) || 0;
+
+            const bathrooms = document.getElementById('editUnitBathrooms').value;
+            if (bathrooms !== '') updatedFields['Bathrooms'] = parseFloat(bathrooms) || 0;
+
+            const sqft = document.getElementById('editUnitSize').value;
+            if (sqft !== '') updatedFields['Square Feet'] = parseInt(sqft) || 0;
+
+            const baseRent = document.getElementById('editUnitRent').value;
+            if (baseRent !== '') updatedFields['Base Rent'] = parseFloat(baseRent) || 0;
+
+            const floor = document.getElementById('editUnitFloor').value;
+            if (floor !== '') updatedFields['Floor'] = parseInt(floor) || 0;
+
+            const askingRent = document.getElementById('editUnitAskingRent').value;
+            if (askingRent !== '') updatedFields['Asking Rent'] = parseFloat(askingRent) || 0;
+
+            const description = document.getElementById('editUnitDescription').value;
+            if (description) updatedFields['Description'] = description;
 
             try {
                 const response = await fetch(
