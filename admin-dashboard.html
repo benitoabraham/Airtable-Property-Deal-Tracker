@@ -430,8 +430,9 @@
                 <form id="editUnitForm" onsubmit="updateUnit(event)">
                     <input type="hidden" id="editUnitId">
                     <div class="form-group">
-                        <label for="editUnitName">Unit Name *</label>
-                        <input type="text" id="editUnitName" required>
+                        <label for="editUnitIdField">Unit ID *</label>
+                        <input type="text" id="editUnitIdField" required>
+                        <small style="color: #666; font-size: 0.85rem;">Note: The Unit Name is auto-generated based on Unit ID</small>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -1178,7 +1179,7 @@
 
             const fields = unit.fields;
             document.getElementById('editUnitId').value = unitId;
-            document.getElementById('editUnitName').value = fields.Name || fields['Unit ID'] || '';
+            document.getElementById('editUnitIdField').value = fields['Unit ID'] || '';
             document.getElementById('editUnitType').value = fields.Type || 'Apartment';
             document.getElementById('editUnitStatus').value = fields.Status || 'Available';
             document.getElementById('editUnitBedrooms').value = fields.Bedrooms || '';
@@ -1200,7 +1201,7 @@
 
             const unitId = document.getElementById('editUnitId').value;
             const updatedFields = {
-                'Name': document.getElementById('editUnitName').value,
+                'Unit ID': document.getElementById('editUnitIdField').value,
                 'Type': document.getElementById('editUnitType').value,
                 'Status': document.getElementById('editUnitStatus').value,
                 'Bedrooms': parseInt(document.getElementById('editUnitBedrooms').value) || 0,
